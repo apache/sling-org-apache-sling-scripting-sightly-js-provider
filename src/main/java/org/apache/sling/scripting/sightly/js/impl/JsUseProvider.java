@@ -38,10 +38,6 @@ import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
-import org.osgi.service.metatype.annotations.Designate;
-import org.osgi.service.metatype.annotations.ObjectClassDefinition;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Use provider for JavaScript Use-API objects.
@@ -66,18 +62,17 @@ public class JsUseProvider implements UseProvider {
 
     }
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(JsUseProvider.class);
-    private static final String JS_ENGINE_NAME = "javascript";
+    private static final String JS_ENGINE_NAME = "rhino";
     private static final JsValueAdapter jsValueAdapter = new JsValueAdapter(new AsyncExtractor());
 
     @Reference
-    private ScriptEngineManager scriptEngineManager = null;
+    private ScriptEngineManager scriptEngineManager;
 
     @Reference
-    private ProxyAsyncScriptableFactory proxyAsyncScriptableFactory = null;
+    private ProxyAsyncScriptableFactory proxyAsyncScriptableFactory;
 
     @Reference
-    private ScriptingResourceResolverProvider scriptingResourceResolverProvider = null;
+    private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
 
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
@@ -87,7 +82,7 @@ public class JsUseProvider implements UseProvider {
         }
         ScriptEngine jsEngine = scriptEngineManager.getEngineByName(JS_ENGINE_NAME);
         if (jsEngine == null) {
-            return ProviderOutcome.failure(new SightlyException("No JavaScript engine was defined."));
+            return ProviderOutcome.failure(new SightlyException("Failed to obtain a " + JS_ENGINE_NAME + " JavaScript engine."));
         }
         SlingScriptHelper scriptHelper = Utils.getHelper(globalBindings);
         JsEnvironment environment = null;
@@ -98,7 +93,7 @@ public class JsUseProvider implements UseProvider {
             Resource callerScript = slingScriptingResolver.getResource(scriptHelper.getScript().getScriptResource().getPath());
             Resource scriptResource = Utils.getScriptResource(callerScript, identifier, globalBindings);
             globalBindings.put(ScriptEngine.FILENAME, scriptResource.getPath());
-            proxyAsyncScriptableFactory.registerProxies(globalBindings);
+            proxyAsyncScriptableFactory.registerProxies(slingScriptingResolver, environment, globalBindings);
             AsyncContainer asyncContainer = environment.runResource(scriptResource, globalBindings, arguments);
             return ProviderOutcome.success(jsValueAdapter.adapt(asyncContainer));
         } finally {

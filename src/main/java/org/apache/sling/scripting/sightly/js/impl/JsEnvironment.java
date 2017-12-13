@@ -21,6 +21,8 @@ package org.apache.sling.scripting.sightly.js.impl;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.ScriptContext;
@@ -115,11 +117,11 @@ public class JsEnvironment {
                 try {
                     Object result;
                     if (jsEngine instanceof Compilable) {
-                        reader = new ScriptNameAwareReader(new InputStreamReader(scriptResource.adaptTo(InputStream.class)),
-                                scriptResource.getPath());
+                        reader = new ScriptNameAwareReader(new InputStreamReader(scriptResource.adaptTo(InputStream.class),
+                                StandardCharsets.UTF_8), scriptResource.getPath());
                         result = ((Compilable) jsEngine).compile(reader).eval(scriptContext);
                     } else {
-                        reader = new InputStreamReader(scriptResource.adaptTo(InputStream.class));
+                        reader = new InputStreamReader(scriptResource.adaptTo(InputStream.class), StandardCharsets.UTF_8);
                         result = jsEngine.eval(reader, scriptContext);
                     }
                     if (commonJsModule.isModified()) {
