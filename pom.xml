@@ -33,7 +33,7 @@
     <!-- P R O J E C T                                                           -->
     <!-- ======================================================================= -->
     <artifactId>org.apache.sling.scripting.sightly.js.provider</artifactId>
-    <version>1.0.27-SNAPSHOT</version>
+    <version>1.0.28</version>
     <packaging>bundle</packaging>
 
     <name>Apache Sling Scripting HTL JavaScript Use Provider</name>
@@ -46,7 +46,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly-js-provider.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly-js-provider.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-scripting-sightly-js-provider.git</url>
-      <tag>HEAD</tag>
+      <tag>org.apache.sling.scripting.sightly.js.provider-1.0.28</tag>
   </scm>
 
     <!-- ======================================================================= -->
@@ -141,13 +141,13 @@
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.scripting.sightly.runtime</artifactId>
-            <version>1.0.0-1.4.0-SNAPSHOT</version>
+            <version>1.0.0-1.4.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.sling</groupId>
             <artifactId>org.apache.sling.scripting.sightly</artifactId>
-            <version>1.1.0-1.4.0-SNAPSHOT</version>
+            <version>1.1.0-1.4.0</version>
             <scope>provided</scope>
         </dependency>
 
