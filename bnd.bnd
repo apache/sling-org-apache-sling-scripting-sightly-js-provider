@@ -1,0 +1,2 @@
+Require-Capability: io.sightly.runtime; filter:="(&(version>=1.0)(!(version>=2.0)))", io.sightly; filter:="(&(version>=1.0)(!(version>=2.0)))", osgi.implementation;filter:="(&(osgi.implementation=org.apache.sling.scripting.javascript.rhinoscriptengine)(version>=1.7.7.1)(!(version>=2.0.0)))"
+Sling-Bundle-Resources: /libs/sling/sightly/js;path:=/SLING-INF/libs/sling/sightly/js
