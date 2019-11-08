@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.io.IOUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -203,7 +204,7 @@ public class SlyBindingsValuesProvider {
     }
 
     private Bindings createBindings(Bindings global) {
-        Bindings bindings = new SimpleBindings();
+        Bindings bindings = new LazyBindings();
         bindings.putAll(global);
         TimingBindingsValuesProvider.INSTANCE.addBindings(bindings);
         return bindings;
