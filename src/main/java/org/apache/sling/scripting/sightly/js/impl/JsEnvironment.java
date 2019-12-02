@@ -28,11 +28,11 @@ import javax.script.Compilable;
 import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
-import javax.script.SimpleBindings;
 import javax.script.SimpleScriptContext;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.js.impl.async.AsyncContainer;
@@ -58,7 +58,7 @@ public class JsEnvironment {
 
     public JsEnvironment(ScriptEngine jsEngine) {
         this.jsEngine = jsEngine;
-        engineBindings = new SimpleBindings();
+        engineBindings = new LazyBindings();
         TimingBindingsValuesProvider.INSTANCE.addBindings(engineBindings);
     }
 
@@ -92,7 +92,7 @@ public class JsEnvironment {
     }
 
     private Bindings buildBindings(Resource scriptResource, Bindings local, Bindings arguments, CommonJsModule commonJsModule) {
-        Bindings bindings = new SimpleBindings();
+        Bindings bindings = new LazyBindings();
         bindings.putAll(engineBindings);
         DependencyResolver dependencyResolver = new DependencyResolver(scriptResource, this, local);
         UseFunction useFunction = new UseFunction(dependencyResolver, arguments);

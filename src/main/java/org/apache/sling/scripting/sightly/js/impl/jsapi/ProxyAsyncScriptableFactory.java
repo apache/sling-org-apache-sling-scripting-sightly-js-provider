@@ -21,10 +21,10 @@ import java.util.Set;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
-import javax.script.SimpleBindings;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.sightly.js.impl.JsEnvironment;
 import org.apache.sling.scripting.sightly.js.impl.rhino.HybridObject;
 import org.mozilla.javascript.Scriptable;
@@ -47,7 +47,7 @@ public class ProxyAsyncScriptableFactory {
 
     public void registerProxies(ResourceResolver resourceResolver, JsEnvironment environment, Bindings bindings) {
         slyBindingsValuesProvider.initialise(resourceResolver, environment, bindings);
-        Bindings bindingsCopy = new SimpleBindings();
+        Bindings bindingsCopy = new LazyBindings();
         for (String factoryName : slyBindingsValuesProvider.getScriptPaths().keySet()) {
             ShadowScriptableObject shadowScriptableObject = new ShadowScriptableObject(factoryName, bindingsCopy);
             bindings.put(factoryName, shadowScriptableObject);
