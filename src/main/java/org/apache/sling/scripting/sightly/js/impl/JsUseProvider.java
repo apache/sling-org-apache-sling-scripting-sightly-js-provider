@@ -22,21 +22,25 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
-import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
-import org.apache.sling.api.scripting.SlingScriptHelper;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
+import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
+import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.js.impl.async.AsyncContainer;
 import org.apache.sling.scripting.sightly.js.impl.async.AsyncExtractor;
 import org.apache.sling.scripting.sightly.js.impl.jsapi.ProxyAsyncScriptableFactory;
 import org.apache.sling.scripting.sightly.js.impl.rhino.JsValueAdapter;
+import org.apache.sling.scripting.sightly.js.impl.use.DependencyResolver;
 import org.apache.sling.scripting.sightly.render.RenderContext;
 import org.apache.sling.scripting.sightly.use.ProviderOutcome;
 import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 
 /**
@@ -74,9 +78,13 @@ public class JsUseProvider implements UseProvider {
     @Reference
     private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
 
+    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
+    private BundledUnitManager bundledUnitManager;
+
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
-        Bindings globalBindings = renderContext.getBindings();
+        Bindings globalBindings = new LazyBindings();
+        globalBindings.putAll(renderContext.getBindings());
         if (!Utils.isJsScript(identifier)) {
             return ProviderOutcome.failure();
         }
@@ -84,17 +92,16 @@ public class JsUseProvider implements UseProvider {
         if (jsEngine == null) {
             return ProviderOutcome.failure(new SightlyException("Failed to obtain a " + JS_ENGINE_NAME + " JavaScript engine."));
         }
-        SlingScriptHelper scriptHelper = Utils.getHelper(globalBindings);
         JsEnvironment environment = null;
         try {
-            environment = new JsEnvironment(jsEngine);
-            environment.initialize();
             ResourceResolver slingScriptingResolver = scriptingResourceResolverProvider.getRequestScopedResourceResolver();
-            Resource callerScript = slingScriptingResolver.getResource(scriptHelper.getScript().getScriptResource().getPath());
-            Resource scriptResource = Utils.getScriptResource(callerScript, identifier, globalBindings);
-            globalBindings.put(ScriptEngine.FILENAME, scriptResource.getPath());
+            DependencyResolver dependencyResolver = new DependencyResolver(slingScriptingResolver, bundledUnitManager);
+            environment = new JsEnvironment(jsEngine, dependencyResolver);
+            environment.initialize();
+            ScriptNameAwareReader reader = dependencyResolver.resolve(globalBindings, identifier);
+            globalBindings.put(ScriptEngine.FILENAME, reader.getScriptName());
             proxyAsyncScriptableFactory.registerProxies(slingScriptingResolver, environment, globalBindings);
-            AsyncContainer asyncContainer = environment.runResource(scriptResource, globalBindings, arguments);
+            AsyncContainer asyncContainer = environment.runScript(reader, globalBindings, arguments);
             return ProviderOutcome.success(jsValueAdapter.adapt(asyncContainer));
         } finally {
             if (environment != null) {

@@ -21,6 +21,7 @@ package org.apache.sling.scripting.sightly.js.impl.jsapi;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.script.Bindings;
+import javax.script.ScriptEngine;
 import javax.script.SimpleBindings;
 import javax.servlet.http.HttpServletRequest;
 
@@ -37,6 +39,7 @@ import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.commons.osgi.PropertiesUtil;
+import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.js.impl.JsEnvironment;
 import org.apache.sling.scripting.sightly.js.impl.Variables;
@@ -195,17 +198,30 @@ public class SlyBindingsValuesProvider {
         if (resource == null) {
             throw new SightlyException("Sly namespace loader could not find the following script: " + path);
         }
-        AsyncContainer container = jsEnvironment.runResource(resource, createBindings(bindings), new SimpleBindings());
-        Object obj = container.getResult();
-        if (!(obj instanceof Function)) {
-            throw new SightlyException("Script " + path + " was expected to return a function.");
+        try {
+            AsyncContainer container =
+                    jsEnvironment.runScript(
+                            new ScriptNameAwareReader(
+                                    new StringReader(IOUtils.toString(resource.adaptTo(InputStream.class), StandardCharsets.UTF_8)),
+                                    resource.getPath()
+                            ),
+                            createBindings(bindings, resource.getPath()),
+                            new SimpleBindings()
+                    );
+            Object obj = container.getResult();
+            if (!(obj instanceof Function)) {
+                throw new SightlyException("Script " + path + " was expected to return a function.");
+            }
+            return (Function) obj;
+        } catch (IOException e) {
+            throw new SightlyException("Cannot read script " + path + " .");
         }
-        return (Function) obj;
     }
 
-    private Bindings createBindings(Bindings global) {
+    private Bindings createBindings(Bindings global, String factoryPath) {
         Bindings bindings = new LazyBindings();
         bindings.putAll(global);
+        bindings.put(ScriptEngine.FILENAME, factoryPath);
         TimingBindingsValuesProvider.INSTANCE.addBindings(bindings);
         return bindings;
     }

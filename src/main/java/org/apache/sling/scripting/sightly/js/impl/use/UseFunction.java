@@ -19,13 +19,19 @@
 
 package org.apache.sling.scripting.sightly.js.impl.use;
 
-import javax.script.Bindings;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.script.Bindings;
+
+import org.apache.sling.scripting.core.ScriptNameAwareReader;
+import org.apache.sling.scripting.sightly.js.impl.JsEnvironment;
+import org.apache.sling.scripting.sightly.js.impl.Utils;
+import org.apache.sling.scripting.sightly.js.impl.async.AsyncContainer;
+import org.apache.sling.scripting.sightly.js.impl.loop.EventLoopInterop;
+import org.apache.sling.scripting.sightly.js.impl.rhino.JsUtils;
 import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -33,21 +39,21 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-import org.apache.sling.scripting.sightly.js.impl.async.AsyncContainer;
-import org.apache.sling.scripting.sightly.js.impl.async.UnaryCallback;
-import org.apache.sling.scripting.sightly.js.impl.loop.EventLoopInterop;
-import org.apache.sling.scripting.sightly.js.impl.rhino.JsUtils;
 
 /**
  * The JavaScript {@code use} function
  */
 public class UseFunction extends BaseFunction {
 
+    private final JsEnvironment jsEnvironment;
     private final DependencyResolver dependencyResolver;
     private final Scriptable thisObj;
+    private final Bindings globalBindings;
 
-    public UseFunction(DependencyResolver dependencyResolver, Bindings arguments) {
+    public UseFunction(JsEnvironment jsEnvironment, DependencyResolver dependencyResolver, Bindings globalBindings, Bindings arguments) {
+        this.jsEnvironment = jsEnvironment;
         this.dependencyResolver = dependencyResolver;
+        this.globalBindings = globalBindings;
         this.thisObj = createThisBinding(arguments);
     }
 
@@ -76,15 +82,13 @@ public class UseFunction extends BaseFunction {
             final Object[] dependencies = new Object[depNames.size()];
             for (int i = 0; i < depNames.size(); i++) {
                 final int dependencyPos = i;
-                dependencyResolver.resolve(depNames.get(i), new UnaryCallback() {
-                    @Override
-                    public void invoke(Object arg) {
-                        counter[0]--;
-                        dependencies[dependencyPos] = arg;
-                        if (counter[0] == 0) {
-                            Object result = JsUtils.callFn(callback, cx, scope, thisObj, dependencies);
-                            asyncContainer.complete(result);
-                        }
+                ScriptNameAwareReader dependency = dependencyResolver.resolve(globalBindings, depNames.get(i));
+                jsEnvironment.runScript(dependency, globalBindings, Utils.EMPTY_BINDINGS, arg -> {
+                    counter[0]--;
+                    dependencies[dependencyPos] = arg;
+                    if (counter[0] == 0) {
+                        Object result = JsUtils.callFn(callback, cx, scope, thisObj, dependencies);
+                        asyncContainer.complete(result);
                     }
                 });
             }
@@ -93,12 +97,9 @@ public class UseFunction extends BaseFunction {
     }
 
     private void callImmediate(final Function callback, final AsyncContainer asyncContainer, final Context cx, final Scriptable scope) {
-        EventLoopInterop.schedule(cx, new Runnable() {
-            @Override
-            public void run() {
-                Object value = JsUtils.callFn(callback, cx, scope, thisObj, new Object[0]);
-                asyncContainer.complete(value);
-            }
+        EventLoopInterop.schedule(cx, () -> {
+            Object value = JsUtils.callFn(callback, cx, scope, thisObj, new Object[0]);
+            asyncContainer.complete(value);
         });
     }
 
@@ -118,7 +119,7 @@ public class UseFunction extends BaseFunction {
 
     private List<String> decodeDepArray(NativeArray nativeArray) {
         int depLength = (int) nativeArray.getLength();
-        List<String> depNames = new ArrayList<String>(depLength);
+        List<String> depNames = new ArrayList<>(depLength);
         for (int i = 0; i < depLength; i++) {
             String depName = jsToString(nativeArray.get(i, nativeArray));
             depNames.add(depName);

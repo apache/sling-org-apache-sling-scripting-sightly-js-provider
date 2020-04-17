@@ -18,11 +18,6 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.js.impl;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.ScriptContext;
@@ -31,7 +26,6 @@ import javax.script.ScriptException;
 import javax.script.SimpleScriptContext;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -44,6 +38,7 @@ import org.apache.sling.scripting.sightly.js.impl.loop.EventLoopInterop;
 import org.apache.sling.scripting.sightly.js.impl.loop.Task;
 import org.apache.sling.scripting.sightly.js.impl.use.DependencyResolver;
 import org.apache.sling.scripting.sightly.js.impl.use.UseFunction;
+import org.jetbrains.annotations.NotNull;
 import org.mozilla.javascript.Context;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +49,13 @@ public class JsEnvironment {
 
     private final ScriptEngine jsEngine;
     private final Bindings engineBindings;
+    private final DependencyResolver dependencyResolver;
     private EventLoop eventLoop;
 
-    public JsEnvironment(ScriptEngine jsEngine) {
+    public JsEnvironment(@NotNull ScriptEngine jsEngine,
+                         @NotNull DependencyResolver dependencyResolver) {
         this.jsEngine = jsEngine;
+        this.dependencyResolver = dependencyResolver;
         engineBindings = new LazyBindings();
         TimingBindingsValuesProvider.INSTANCE.addBindings(engineBindings);
     }
@@ -76,67 +74,59 @@ public class JsEnvironment {
         Context.exit();
     }
 
-    public void runResource(Resource scriptResource, Bindings globalBindings, Bindings arguments, UnaryCallback callback) {
+    public void runScript(ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments, UnaryCallback callback) {
         ScriptContext scriptContext = new SimpleScriptContext();
         CommonJsModule module = new CommonJsModule();
-        Bindings scriptBindings = buildBindings(scriptResource, globalBindings, arguments, module);
+        Bindings scriptBindings = buildBindings(reader, globalBindings, arguments, module);
         scriptContext.setBindings(scriptBindings, ScriptContext.ENGINE_SCOPE);
-        scriptContext.setAttribute(ScriptEngine.FILENAME, scriptResource.getPath(), ScriptContext.ENGINE_SCOPE);
-        runScript(scriptResource, scriptContext, callback, module);
+        scriptContext.setAttribute(ScriptEngine.FILENAME, reader.getScriptName(), ScriptContext.ENGINE_SCOPE);
+        runScript(reader, scriptContext, callback, module);
     }
 
-    public AsyncContainer runResource(Resource scriptResource, Bindings globalBindings, Bindings arguments) {
+    public AsyncContainer runScript(ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments) {
         AsyncContainer asyncContainer = new AsyncContainer();
-        runResource(scriptResource, globalBindings, arguments, asyncContainer.createCompletionCallback());
+        runScript(reader, globalBindings, arguments, asyncContainer.createCompletionCallback());
         return asyncContainer;
     }
 
-    private Bindings buildBindings(Resource scriptResource, Bindings local, Bindings arguments, CommonJsModule commonJsModule) {
+    private Bindings buildBindings(ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments, CommonJsModule commonJsModule) {
         Bindings bindings = new LazyBindings();
         bindings.putAll(engineBindings);
-        DependencyResolver dependencyResolver = new DependencyResolver(scriptResource, this, local);
-        UseFunction useFunction = new UseFunction(dependencyResolver, arguments);
+        UseFunction useFunction = new UseFunction(this, dependencyResolver, globalBindings, arguments);
         bindings.put(Variables.JS_USE, useFunction);
         bindings.put(Variables.MODULE, commonJsModule);
         bindings.put(Variables.EXPORTS, commonJsModule.getExports());
-        bindings.put(Variables.CONSOLE, new Console(LoggerFactory.getLogger(scriptResource.getName())));
-        bindings.putAll(local);
+        bindings.put(Variables.CONSOLE, new Console(LoggerFactory.getLogger(reader.getScriptName())));
+        bindings.putAll(globalBindings);
         return bindings;
     }
 
-    private void runScript(Resource scriptResource, ScriptContext scriptContext, UnaryCallback callback, CommonJsModule commonJsModule) {
-        eventLoop.schedule(scriptTask(scriptResource, scriptContext, callback, commonJsModule));
+    private void runScript(ScriptNameAwareReader reader, ScriptContext scriptContext, UnaryCallback callback, CommonJsModule commonJsModule) {
+        eventLoop.schedule(scriptTask(reader, scriptContext, callback, commonJsModule));
     }
 
-    private Task scriptTask(final Resource scriptResource, final ScriptContext scriptContext,
+    private Task scriptTask(final ScriptNameAwareReader reader, final ScriptContext scriptContext,
                             final UnaryCallback callback, final CommonJsModule commonJsModule) {
-        return new Task(new Runnable() {
-            @Override
-            public void run() {
-                Reader reader = null;
-                try {
-                    Object result;
-                    if (jsEngine instanceof Compilable) {
-                        reader = new ScriptNameAwareReader(new InputStreamReader(scriptResource.adaptTo(InputStream.class),
-                                StandardCharsets.UTF_8), scriptResource.getPath());
-                        result = ((Compilable) jsEngine).compile(reader).eval(scriptContext);
-                    } else {
-                        reader = new InputStreamReader(scriptResource.adaptTo(InputStream.class), StandardCharsets.UTF_8);
-                        result = jsEngine.eval(reader, scriptContext);
-                    }
-                    if (commonJsModule.isModified()) {
-                        result = commonJsModule.getExports();
-                    }
-                    if (result instanceof AsyncContainer) {
-                        ((AsyncContainer) result).addListener(callback);
-                    } else {
-                        callback.invoke(result);
-                    }
-                } catch (ScriptException e) {
-                    throw new SightlyException(e);
-                } finally {
-                    IOUtils.closeQuietly(reader);
+        return new Task(() -> {
+            try {
+                Object result;
+                if (jsEngine instanceof Compilable) {
+                    result = ((Compilable) jsEngine).compile(reader).eval(scriptContext);
+                } else {
+                    result = jsEngine.eval(reader, scriptContext);
                 }
+                if (commonJsModule.isModified()) {
+                    result = commonJsModule.getExports();
+                }
+                if (result instanceof AsyncContainer) {
+                    ((AsyncContainer) result).addListener(callback);
+                } else {
+                    callback.invoke(result);
+                }
+            } catch (ScriptException e) {
+                throw new SightlyException(e);
+            } finally {
+                IOUtils.closeQuietly(reader);
             }
         });
     }

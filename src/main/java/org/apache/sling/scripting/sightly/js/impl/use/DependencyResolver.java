@@ -19,40 +19,93 @@
 
 package org.apache.sling.scripting.sightly.js.impl.use;
 
-import javax.script.Bindings;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.scripting.SlingScript;
+import org.apache.sling.api.scripting.SlingScriptHelper;
+import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.js.impl.JsEnvironment;
+import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.js.impl.Utils;
-import org.apache.sling.scripting.sightly.js.impl.async.UnaryCallback;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Resolves dependencies specified by the Use function
  */
 public class DependencyResolver {
 
-    private final Resource caller;
-    private final JsEnvironment jsEnvironment;
-    private final Bindings globalBindings;
+    private final BundledUnitManager bundledUnitManager;
+    private final ResourceResolver scriptingResourceResolver;
 
-    public DependencyResolver(Resource resource, JsEnvironment jsEnvironment, Bindings globalBindings) {
-        this.caller = resource;
-        this.jsEnvironment = jsEnvironment;
-        this.globalBindings = globalBindings;
+    public DependencyResolver(@NotNull ResourceResolver scriptingResourceResolver, @Nullable BundledUnitManager bundledUnitManager) {
+        this.bundledUnitManager = bundledUnitManager;
+        this.scriptingResourceResolver = scriptingResourceResolver;
     }
 
-    /**
-     * Resolve a dependency
-     * @param dependency the dependency identifier
-     * @param callback the callback that will receive the resolved dependency
-     */
-    public void resolve(String dependency, UnaryCallback callback) {
+    public @NotNull ScriptNameAwareReader resolve(Bindings bindings, String dependency) {
         if (!Utils.isJsScript(dependency)) {
             throw new SightlyException("Only JS scripts are allowed as dependencies. Invalid dependency: " + dependency);
         }
-        Resource scriptResource = Utils.getScriptResource(caller, dependency, globalBindings);
-        jsEnvironment.runResource(scriptResource, globalBindings, Utils.EMPTY_BINDINGS, callback);
+        ScriptNameAwareReader reader = null;
+        IOException ioException = null;
+        try {
+            if (bundledUnitManager != null) {
+                URL script = bundledUnitManager.getScript(bindings, dependency);
+                if (script != null) {
+                    reader = new ScriptNameAwareReader(new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
+                            script.toExternalForm());
+                }
+            }
+            if (reader == null) {
+                Resource scriptResource = null;
+                if (dependency.startsWith("/")) {
+                    scriptResource = scriptingResourceResolver.getResource(dependency);
+                }
+                if (scriptResource == null) {
+                    SlingScriptHelper scriptHelper = Utils.getHelper(bindings);
+                    if (scriptHelper != null) {
+                        String callerName = (String) bindings.get(ScriptEngine.FILENAME);
+                        Resource caller = null;
+                        if (StringUtils.isNotEmpty(callerName)) {
+                            caller = scriptingResourceResolver.getResource(callerName);
+                        }
+                        SlingScript slingScript = scriptHelper.getScript();
+                        if (caller == null && slingScript != null) {
+                            caller = scriptingResourceResolver.getResource(slingScript.getScriptResource().getPath());
+                        }
+                        if (caller != null) {
+                            scriptResource = Utils.getScriptResource(caller, dependency, bindings);
+                        }
+                    }
+                }
+                if (scriptResource != null) {
+                    reader = new ScriptNameAwareReader(new StringReader(IOUtils.toString(scriptResource.adaptTo(InputStream.class),
+                            StandardCharsets.UTF_8)), scriptResource.getPath());
+                }
+            }
+        } catch (IOException e) {
+            ioException = e;
+        }
+        if (reader == null) {
+            SightlyException sightlyException = new SightlyException(String.format("Unable to load script dependency %s.", dependency));
+            if (ioException != null) {
+                sightlyException.initCause(ioException);
+            }
+            throw sightlyException;
+        }
+        return reader;
     }
 
 }
