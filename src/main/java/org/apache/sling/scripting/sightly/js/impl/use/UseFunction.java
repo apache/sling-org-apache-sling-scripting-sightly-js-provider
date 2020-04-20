@@ -25,8 +25,11 @@ import java.util.List;
 import java.util.Map;
 
 import javax.script.Bindings;
+import javax.script.ScriptEngine;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
+import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.js.impl.JsEnvironment;
 import org.apache.sling.scripting.sightly.js.impl.Utils;
 import org.apache.sling.scripting.sightly.js.impl.async.AsyncContainer;
@@ -82,8 +85,18 @@ public class UseFunction extends BaseFunction {
             final Object[] dependencies = new Object[depNames.size()];
             for (int i = 0; i < depNames.size(); i++) {
                 final int dependencyPos = i;
-                ScriptNameAwareReader dependency = dependencyResolver.resolve(globalBindings, depNames.get(i));
-                jsEnvironment.runScript(dependency, globalBindings, Utils.EMPTY_BINDINGS, arg -> {
+                String dependency = depNames.get(i);
+                ScriptNameAwareReader dependencyReader = dependencyResolver.resolve(globalBindings, dependency);
+                if (dependencyReader == null) {
+                    String caller = (String) globalBindings.get(ScriptEngine.FILENAME);
+                    if (StringUtils.isNotEmpty(caller)) {
+                        throw new SightlyException(String.format("Cannot locate use-function dependency %s from caller %s.", dependency,
+                                caller));
+                    } else {
+                        throw new SightlyException(String.format("Cannot locate use-function dependency %s.", dependencies));
+                    }
+                }
+                jsEnvironment.runScript(dependencyReader, globalBindings, Utils.EMPTY_BINDINGS, arg -> {
                     counter[0]--;
                     dependencies[dependencyPos] = arg;
                     if (counter[0] == 0) {

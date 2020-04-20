@@ -32,6 +32,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScript;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
@@ -54,7 +55,7 @@ public class DependencyResolver {
         this.scriptingResourceResolver = scriptingResourceResolver;
     }
 
-    public @NotNull ScriptNameAwareReader resolve(Bindings bindings, String dependency) {
+    public @Nullable ScriptNameAwareReader resolve(Bindings bindings, String dependency) {
         if (!Utils.isJsScript(dependency)) {
             throw new SightlyException("Only JS scripts are allowed as dependencies. Invalid dependency: " + dependency);
         }
@@ -85,6 +86,16 @@ public class DependencyResolver {
                         if (caller == null && slingScript != null) {
                             caller = scriptingResourceResolver.getResource(slingScript.getScriptResource().getPath());
                         }
+                        if (caller == null) {
+                            Resource resource = (Resource) bindings.get(SlingBindings.RESOURCE);
+                            if (resource != null) {
+                                String type = resource.getResourceType();
+                                caller = scriptingResourceResolver.getResource(type);
+                                if (caller != null) {
+                                    scriptResource = Utils.getScriptResource(caller, dependency, bindings);
+                                }
+                            }
+                        }
                         if (caller != null) {
                             scriptResource = Utils.getScriptResource(caller, dependency, bindings);
                         }
@@ -98,12 +109,9 @@ public class DependencyResolver {
         } catch (IOException e) {
             ioException = e;
         }
-        if (reader == null) {
-            SightlyException sightlyException = new SightlyException(String.format("Unable to load script dependency %s.", dependency));
-            if (ioException != null) {
-                sightlyException.initCause(ioException);
-            }
-            throw sightlyException;
+        if (ioException != null) {
+            throw  new SightlyException(String.format("Unable to load script dependency %s.",
+                    dependency), ioException);
         }
         return reader;
     }
