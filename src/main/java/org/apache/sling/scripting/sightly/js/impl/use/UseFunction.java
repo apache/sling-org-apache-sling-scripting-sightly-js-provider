@@ -28,6 +28,7 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.apache.sling.scripting.sightly.js.impl.JsEnvironment;
@@ -88,15 +89,12 @@ public class UseFunction extends BaseFunction {
                 String dependency = depNames.get(i);
                 ScriptNameAwareReader dependencyReader = dependencyResolver.resolve(globalBindings, dependency);
                 if (dependencyReader == null) {
-                    String caller = (String) globalBindings.get(ScriptEngine.FILENAME);
-                    if (StringUtils.isNotEmpty(caller)) {
-                        throw new SightlyException(String.format("Cannot locate use-function dependency %s from caller %s.", dependency,
-                                caller));
-                    } else {
-                        throw new SightlyException(String.format("Cannot locate use-function dependency %s.", dependencies));
-                    }
+                    throw new SightlyException("Cannot locate script " + dependency);
                 }
-                jsEnvironment.runScript(dependencyReader, globalBindings, Utils.EMPTY_BINDINGS, arg -> {
+                Bindings bindings = new LazyBindings();
+                bindings.putAll(globalBindings);
+                bindings.put(ScriptEngine.FILENAME, dependencyReader.getScriptName());
+                jsEnvironment.runScript(dependencyReader, bindings, Utils.EMPTY_BINDINGS, arg -> {
                     counter[0]--;
                     dependencies[dependencyPos] = arg;
                     if (counter[0] == 0) {

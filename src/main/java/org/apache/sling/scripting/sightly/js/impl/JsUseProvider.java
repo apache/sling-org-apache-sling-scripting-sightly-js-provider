@@ -100,7 +100,6 @@ public class JsUseProvider implements UseProvider {
             environment.initialize();
             ScriptNameAwareReader reader = dependencyResolver.resolve(globalBindings, identifier);
             if (reader != null) {
-                globalBindings.put(ScriptEngine.FILENAME, reader.getScriptName());
                 proxyAsyncScriptableFactory.registerProxies(slingScriptingResolver, environment, globalBindings);
                 AsyncContainer asyncContainer = environment.runScript(reader, globalBindings, arguments);
                 return ProviderOutcome.success(jsValueAdapter.adapt(asyncContainer));

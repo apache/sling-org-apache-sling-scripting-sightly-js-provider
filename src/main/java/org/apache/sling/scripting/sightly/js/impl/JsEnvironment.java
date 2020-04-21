@@ -79,7 +79,6 @@ public class JsEnvironment {
         CommonJsModule module = new CommonJsModule();
         Bindings scriptBindings = buildBindings(reader, globalBindings, arguments, module);
         scriptContext.setBindings(scriptBindings, ScriptContext.ENGINE_SCOPE);
-        scriptContext.setAttribute(ScriptEngine.FILENAME, reader.getScriptName(), ScriptContext.ENGINE_SCOPE);
         runScript(reader, scriptContext, callback, module);
     }
 
@@ -92,6 +91,7 @@ public class JsEnvironment {
     private Bindings buildBindings(ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments, CommonJsModule commonJsModule) {
         Bindings bindings = new LazyBindings();
         bindings.putAll(engineBindings);
+        bindings.put(ScriptEngine.FILENAME, reader.getScriptName());
         UseFunction useFunction = new UseFunction(this, dependencyResolver, globalBindings, arguments);
         bindings.put(Variables.JS_USE, useFunction);
         bindings.put(Variables.MODULE, commonJsModule);
