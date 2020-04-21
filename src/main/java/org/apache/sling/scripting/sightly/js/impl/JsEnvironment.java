@@ -92,12 +92,12 @@ public class JsEnvironment {
         Bindings bindings = new LazyBindings();
         bindings.putAll(engineBindings);
         bindings.put(ScriptEngine.FILENAME, reader.getScriptName());
-        UseFunction useFunction = new UseFunction(this, dependencyResolver, globalBindings, arguments);
-        bindings.put(Variables.JS_USE, useFunction);
         bindings.put(Variables.MODULE, commonJsModule);
         bindings.put(Variables.EXPORTS, commonJsModule.getExports());
         bindings.put(Variables.CONSOLE, new Console(LoggerFactory.getLogger(reader.getScriptName())));
         bindings.putAll(globalBindings);
+        UseFunction useFunction = new UseFunction(this, dependencyResolver, bindings, arguments);
+        bindings.put(Variables.JS_USE, useFunction);
         return bindings;
     }
 
