@@ -79,7 +79,7 @@ public class JsEnvironment {
         CommonJsModule module = new CommonJsModule();
         Bindings scriptBindings = buildBindings(reader, globalBindings, arguments, module);
         scriptContext.setBindings(scriptBindings, ScriptContext.ENGINE_SCOPE);
-        runScript(reader, scriptContext, callback, module);
+        runScript(reader, scriptContext, callback);
     }
 
     public AsyncContainer runScript(ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments) {
@@ -101,12 +101,11 @@ public class JsEnvironment {
         return bindings;
     }
 
-    private void runScript(ScriptNameAwareReader reader, ScriptContext scriptContext, UnaryCallback callback, CommonJsModule commonJsModule) {
-        eventLoop.schedule(scriptTask(reader, scriptContext, callback, commonJsModule));
+    private void runScript(ScriptNameAwareReader reader, ScriptContext scriptContext, UnaryCallback callback) {
+        eventLoop.schedule(scriptTask(reader, scriptContext, callback));
     }
 
-    private Task scriptTask(final ScriptNameAwareReader reader, final ScriptContext scriptContext,
-                            final UnaryCallback callback, final CommonJsModule commonJsModule) {
+    private Task scriptTask(final ScriptNameAwareReader reader, final ScriptContext scriptContext, final UnaryCallback callback) {
         return new Task(() -> {
             try {
                 Object result;
@@ -115,7 +114,9 @@ public class JsEnvironment {
                 } else {
                     result = jsEngine.eval(reader, scriptContext);
                 }
-                if (commonJsModule.isModified()) {
+                CommonJsModule commonJsModule =
+                        (CommonJsModule) scriptContext.getBindings(ScriptContext.ENGINE_SCOPE).get(Variables.MODULE);
+                if (commonJsModule != null && commonJsModule.isModified()) {
                     result = commonJsModule.getExports();
                 }
                 if (result instanceof AsyncContainer) {
