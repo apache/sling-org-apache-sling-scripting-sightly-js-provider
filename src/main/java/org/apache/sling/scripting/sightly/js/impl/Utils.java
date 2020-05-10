@@ -51,6 +51,9 @@ public class Utils {
     public static Resource getScriptResource(Resource caller, String path, Bindings bindings) {
         Resource scriptResource = caller.getChild(path);
         if (scriptResource == null) {
+            scriptResource = caller.getParent().getChild(path);
+        }
+        if (scriptResource == null) {
             Resource componentCaller = ResourceResolution
                     .getResourceForRequest(caller.getResourceResolver(), (SlingHttpServletRequest) bindings.get(SlingBindings.REQUEST));
             if (isResourceOverlay(caller, componentCaller)) {

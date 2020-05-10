@@ -91,9 +91,6 @@ public class DependencyResolver {
                             if (resource != null) {
                                 String type = resource.getResourceType();
                                 caller = scriptingResourceResolver.getResource(type);
-                                if (caller != null) {
-                                    scriptResource = Utils.getScriptResource(caller, dependency, bindings);
-                                }
                             }
                         }
                         if (caller != null) {
