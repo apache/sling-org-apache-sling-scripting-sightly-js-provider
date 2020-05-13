@@ -114,10 +114,12 @@ public class JsEnvironment {
                 } else {
                     result = jsEngine.eval(reader, scriptContext);
                 }
-                CommonJsModule commonJsModule =
+                if (result == null) {
+                    CommonJsModule commonJsModule =
                         (CommonJsModule) scriptContext.getBindings(ScriptContext.ENGINE_SCOPE).get(Variables.MODULE);
-                if (commonJsModule != null && commonJsModule.isModified()) {
-                    result = commonJsModule.getExports();
+                    if (commonJsModule != null && commonJsModule.isModified()) {
+                        result = commonJsModule.getExports();
+                    }
                 }
                 if (result instanceof AsyncContainer) {
                     ((AsyncContainer) result).addListener(callback);
