@@ -27,7 +27,6 @@ import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.api.resource.ScriptingResourceResolverProvider;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.js.impl.async.AsyncContainer;
 import org.apache.sling.scripting.sightly.js.impl.async.AsyncExtractor;
 import org.apache.sling.scripting.sightly.js.impl.jsapi.ProxyAsyncScriptableFactory;
@@ -39,8 +38,6 @@ import org.apache.sling.scripting.sightly.use.UseProvider;
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
 
 /**
@@ -78,9 +75,6 @@ public class JsUseProvider implements UseProvider {
     @Reference
     private ScriptingResourceResolverProvider scriptingResourceResolverProvider;
 
-    @Reference(cardinality = ReferenceCardinality.OPTIONAL, policyOption = ReferencePolicyOption.GREEDY)
-    private BundledUnitManager bundledUnitManager;
-
     @Override
     public ProviderOutcome provide(String identifier, RenderContext renderContext, Bindings arguments) {
         Bindings globalBindings = new LazyBindings();
@@ -95,7 +89,7 @@ public class JsUseProvider implements UseProvider {
         JsEnvironment environment = null;
         try {
             ResourceResolver slingScriptingResolver = scriptingResourceResolverProvider.getRequestScopedResourceResolver();
-            DependencyResolver dependencyResolver = new DependencyResolver(slingScriptingResolver, bundledUnitManager);
+            DependencyResolver dependencyResolver = new DependencyResolver(slingScriptingResolver);
             environment = new JsEnvironment(jsEngine, dependencyResolver);
             environment.initialize();
             ScriptNameAwareReader reader = dependencyResolver.resolve(globalBindings, identifier);

@@ -22,7 +22,6 @@ package org.apache.sling.scripting.sightly.js.impl.use;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 import javax.script.Bindings;
@@ -37,7 +36,6 @@ import org.apache.sling.api.scripting.SlingScript;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
-import org.apache.sling.scripting.sightly.engine.BundledUnitManager;
 import org.apache.sling.scripting.sightly.js.impl.Utils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -47,11 +45,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DependencyResolver {
 
-    private final BundledUnitManager bundledUnitManager;
     private final ResourceResolver scriptingResourceResolver;
 
-    public DependencyResolver(@NotNull ResourceResolver scriptingResourceResolver, @Nullable BundledUnitManager bundledUnitManager) {
-        this.bundledUnitManager = bundledUnitManager;
+    public DependencyResolver(@NotNull ResourceResolver scriptingResourceResolver) {
         this.scriptingResourceResolver = scriptingResourceResolver;
     }
 
@@ -62,13 +58,6 @@ public class DependencyResolver {
         ScriptNameAwareReader reader = null;
         IOException ioException = null;
         try {
-            if (bundledUnitManager != null) {
-                URL script = bundledUnitManager.getScript(bindings, dependency);
-                if (script != null) {
-                    reader = new ScriptNameAwareReader(new StringReader(IOUtils.toString(script, StandardCharsets.UTF_8)),
-                            script.toExternalForm());
-                }
-            }
             if (reader == null) {
                 Resource scriptResource = null;
                 if (dependency.startsWith("/")) {
