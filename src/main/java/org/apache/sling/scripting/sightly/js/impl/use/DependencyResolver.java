@@ -29,10 +29,11 @@ import javax.script.ScriptEngine;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.sling.api.resource.NonExistingResource;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ResourceUtil;
 import org.apache.sling.api.scripting.SlingBindings;
-import org.apache.sling.api.scripting.SlingScript;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -58,49 +59,69 @@ public class DependencyResolver {
         ScriptNameAwareReader reader = null;
         IOException ioException = null;
         try {
-            if (reader == null) {
-                Resource scriptResource = null;
-                if (dependency.startsWith("/")) {
-                    scriptResource = scriptingResourceResolver.getResource(dependency);
+            Resource scriptResource = null;
+            if (dependency.startsWith("/")) {
+                scriptResource = scriptingResourceResolver.getResource(dependency);
+            }
+            if (scriptResource == null) {
+                String callerName = (String) bindings.get(ScriptEngine.FILENAME);
+                Resource caller = null;
+                if (StringUtils.isNotEmpty(callerName)) {
+                    caller = scriptingResourceResolver.getResource(callerName);
                 }
-                if (scriptResource == null) {
+                if (caller == null) {
                     SlingScriptHelper scriptHelper = Utils.getHelper(bindings);
                     if (scriptHelper != null) {
-                        String callerName = (String) bindings.get(ScriptEngine.FILENAME);
-                        Resource caller = null;
-                        if (StringUtils.isNotEmpty(callerName)) {
-                            caller = scriptingResourceResolver.getResource(callerName);
-                        }
-                        SlingScript slingScript = scriptHelper.getScript();
-                        if (caller == null && slingScript != null) {
-                            caller = scriptingResourceResolver.getResource(slingScript.getScriptResource().getPath());
-                        }
-                        if (caller == null) {
-                            Resource resource = (Resource) bindings.get(SlingBindings.RESOURCE);
-                            if (resource != null) {
-                                String type = resource.getResourceType();
-                                caller = scriptingResourceResolver.getResource(type);
-                                if (caller != null) {
-                                    scriptResource = Utils.getScriptResource(caller, dependency, bindings);
+                        caller = scriptHelper.getScript().getScriptResource();
+                    }
+                }
+                if (caller != null && Utils.isJsScript(caller.getName()) &&
+                        ("sling/bundle/resource".equals(caller.getResourceType()) || "nt:file".equals(caller.getResourceType()))) {
+                    caller = caller.getParent();
+                    if (caller != null) {
+                        scriptResource = caller.getChild(dependency);
+                    }
+                }
+
+            }
+            if (scriptResource == null) {
+                Resource requestResource = (Resource) bindings.get(SlingBindings.RESOURCE);
+                String type = requestResource.getResourceType();
+                while (scriptResource == null && type != null) {
+                    Resource servletResource = null;
+                    if (!type.startsWith("/")) {
+                        for (String searchPath : scriptingResourceResolver.getSearchPath()) {
+                            String normalizedPath = ResourceUtil.normalize(searchPath + "/" + type);
+                            if (normalizedPath != null) {
+                                servletResource =
+                                        scriptingResourceResolver.resolve(normalizedPath);
+                                if (!(servletResource instanceof NonExistingResource)) {
+                                    break;
                                 }
                             }
                         }
-                        if (caller != null) {
-                            scriptResource = Utils.getScriptResource(caller, dependency, bindings);
-                        }
+                    } else {
+                        servletResource = scriptingResourceResolver.resolve(type);
+                    }
+                    if (servletResource != null) {
+                        scriptResource = servletResource.getChild(dependency);
+                        type = servletResource.getResourceSuperType();
+                    } else {
+                        type = null;
                     }
                 }
-                if (scriptResource != null) {
-                    reader = new ScriptNameAwareReader(new StringReader(IOUtils.toString(scriptResource.adaptTo(InputStream.class),
-                            StandardCharsets.UTF_8)), scriptResource.getPath());
-                }
             }
+
+            if (scriptResource == null) {
+                throw  new SightlyException(String.format("Unable to load script dependency %s.", dependency));
+            }
+            reader = new ScriptNameAwareReader(new StringReader(IOUtils.toString(scriptResource.adaptTo(InputStream.class),
+                    StandardCharsets.UTF_8)), scriptResource.getPath());
         } catch (IOException e) {
             ioException = e;
         }
         if (ioException != null) {
-            throw  new SightlyException(String.format("Unable to load script dependency %s.",
-                    dependency), ioException);
+            throw new SightlyException(String.format("Unable to load script dependency %s.", dependency), ioException);
         }
         return reader;
     }
