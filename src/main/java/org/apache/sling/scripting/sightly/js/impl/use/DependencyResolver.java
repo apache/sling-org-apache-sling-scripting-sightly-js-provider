@@ -95,7 +95,8 @@ public class DependencyResolver {
                             if (normalizedPath != null) {
                                 servletResource =
                                         scriptingResourceResolver.resolve(normalizedPath);
-                                if (!(servletResource instanceof NonExistingResource)) {
+                                if (!(servletResource instanceof NonExistingResource) &&
+                                        !Resource.RESOURCE_TYPE_NON_EXISTING.equalsIgnoreCase(servletResource.getResourceType())) {
                                     break;
                                 }
                             }
