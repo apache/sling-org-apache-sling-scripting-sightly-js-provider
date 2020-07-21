@@ -77,9 +77,17 @@ public class DependencyResolver {
                 }
                 if (caller != null && Utils.isJsScript(caller.getName()) &&
                         ("sling/bundle/resource".equals(caller.getResourceType()) || "nt:file".equals(caller.getResourceType()))) {
-                    caller = caller.getParent();
-                    if (caller != null) {
-                        scriptResource = caller.getChild(dependency);
+                    if (dependency.startsWith(".")) {
+                        // relative path
+                        String absolutePath = ResourceUtil.normalize(caller.getPath() + "/" + dependency);
+                        if (StringUtils.isNotEmpty(absolutePath)) {
+                            scriptResource = scriptingResourceResolver.resolve(absolutePath);
+                        }
+                    } else {
+                        caller = caller.getParent();
+                        if (caller != null) {
+                            scriptResource = caller.getChild(dependency);
+                        }
                     }
                 }
 
@@ -105,7 +113,15 @@ public class DependencyResolver {
                         servletResource = scriptingResourceResolver.resolve(type);
                     }
                     if (servletResource != null) {
-                        scriptResource = servletResource.getChild(dependency);
+                        if (dependency.startsWith(".")) {
+                            // relative path
+                            String absolutePath = ResourceUtil.normalize(servletResource.getPath() + "/" + dependency);
+                            if (StringUtils.isNotEmpty(absolutePath)) {
+                                scriptResource = scriptingResourceResolver.resolve(absolutePath);
+                            }
+                        } else {
+                            scriptResource = servletResource.getChild(dependency);
+                        }
                         type = servletResource.getResourceSuperType();
                     } else {
                         type = null;
