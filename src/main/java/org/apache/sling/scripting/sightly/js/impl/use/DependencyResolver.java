@@ -77,12 +77,8 @@ public class DependencyResolver {
                 }
                 if (caller != null && Utils.isJsScript(caller.getName()) &&
                         ("sling/bundle/resource".equals(caller.getResourceType()) || "nt:file".equals(caller.getResourceType()))) {
-                    if (dependency.startsWith(".")) {
-                        // relative path
-                        String absolutePath = ResourceUtil.normalize(caller.getPath() + "/" + dependency);
-                        if (StringUtils.isNotEmpty(absolutePath)) {
-                            scriptResource = scriptingResourceResolver.resolve(absolutePath);
-                        }
+                    if (dependency.startsWith("..")) {
+                        scriptResource = caller.getChild(dependency);
                     } else {
                         caller = caller.getParent();
                         if (caller != null) {
