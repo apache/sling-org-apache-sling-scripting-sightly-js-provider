@@ -96,17 +96,13 @@ public class DependencyResolver {
                     if (!type.startsWith("/")) {
                         for (String searchPath : scriptingResourceResolver.getSearchPath()) {
                             String normalizedPath = ResourceUtil.normalize(searchPath + "/" + type);
-                            if (normalizedPath != null) {
-                                servletResource =
-                                        scriptingResourceResolver.resolve(normalizedPath);
-                                if (!(servletResource instanceof NonExistingResource) &&
-                                        !Resource.RESOURCE_TYPE_NON_EXISTING.equalsIgnoreCase(servletResource.getResourceType())) {
-                                    break;
-                                }
+                            servletResource = resolveServletResource(normalizedPath);
+                            if (servletResource != null) {
+                                break;
                             }
                         }
                     } else {
-                        servletResource = scriptingResourceResolver.resolve(type);
+                        servletResource = resolveServletResource(type);
                     }
                     if (servletResource != null) {
                         if (dependency.startsWith(".")) {
@@ -137,6 +133,14 @@ public class DependencyResolver {
             throw new SightlyException(String.format("Unable to load script dependency %s.", dependency), ioException);
         }
         return reader;
+    }
+
+    Resource resolveServletResource(String type) {
+        Resource servletResource = scriptingResourceResolver.resolve(type);
+        if (ResourceUtil.isNonExistingResource(servletResource)) {
+            servletResource = scriptingResourceResolver.getResource(type);
+        }
+        return servletResource;
     }
 
 }
