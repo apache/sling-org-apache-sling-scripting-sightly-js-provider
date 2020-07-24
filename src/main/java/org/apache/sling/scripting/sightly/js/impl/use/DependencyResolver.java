@@ -120,10 +120,15 @@ public class DependencyResolver {
             }
 
             if (scriptResource == null) {
-                throw  new SightlyException(String.format("Unable to load script dependency %s.", dependency));
+                throw new SightlyException(String.format("Unable to load script dependency %s.", dependency));
             }
-            reader = new ScriptNameAwareReader(new StringReader(IOUtils.toString(scriptResource.adaptTo(InputStream.class),
-                    StandardCharsets.UTF_8)), scriptResource.getPath());
+            InputStream scriptStream = scriptResource.adaptTo(InputStream.class);
+            if (scriptStream == null) {
+                throw new SightlyException(String.format("Unable to read script %s.", dependency));
+            }
+            reader = new ScriptNameAwareReader(new StringReader(IOUtils.toString(scriptStream, StandardCharsets.UTF_8)),
+                    scriptResource.getPath());
+            IOUtils.closeQuietly(scriptStream);
         } catch (IOException e) {
             ioException = e;
         }
