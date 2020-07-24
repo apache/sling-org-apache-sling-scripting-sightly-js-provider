@@ -29,7 +29,6 @@ import javax.script.ScriptEngine;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.sling.api.resource.NonExistingResource;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.resource.ResourceUtil;
@@ -59,13 +58,13 @@ public class DependencyResolver {
         ScriptNameAwareReader reader = null;
         IOException ioException = null;
         try {
+            Resource caller = null;
             Resource scriptResource = null;
             if (dependency.startsWith("/")) {
                 scriptResource = scriptingResourceResolver.getResource(dependency);
             }
             if (scriptResource == null) {
                 String callerName = (String) bindings.get(ScriptEngine.FILENAME);
-                Resource caller = null;
                 if (StringUtils.isNotEmpty(callerName)) {
                     caller = scriptingResourceResolver.getResource(callerName);
                 }
@@ -75,20 +74,19 @@ public class DependencyResolver {
                         caller = scriptHelper.getScript().getScriptResource();
                     }
                 }
-                if (caller != null && Utils.isJsScript(caller.getName()) &&
-                        ("sling/bundle/resource".equals(caller.getResourceType()) || "nt:file".equals(caller.getResourceType()))) {
-                    if (dependency.startsWith("..")) {
+            }
+            if (caller != null && Utils.isJsScript(caller.getName())) {
+                if (dependency.startsWith("..")) {
+                    scriptResource = caller.getChild(dependency);
+                } else {
+                    caller = caller.getParent();
+                    if (caller != null) {
                         scriptResource = caller.getChild(dependency);
-                    } else {
-                        caller = caller.getParent();
-                        if (caller != null) {
-                            scriptResource = caller.getChild(dependency);
-                        }
                     }
                 }
-
             }
-            if (scriptResource == null) {
+
+            if (caller != null && scriptResource == null) {
                 Resource requestResource = (Resource) bindings.get(SlingBindings.RESOURCE);
                 String type = requestResource.getResourceType();
                 while (scriptResource == null && type != null) {
@@ -96,20 +94,20 @@ public class DependencyResolver {
                     if (!type.startsWith("/")) {
                         for (String searchPath : scriptingResourceResolver.getSearchPath()) {
                             String normalizedPath = ResourceUtil.normalize(searchPath + "/" + type);
-                            servletResource = resolveServletResource(normalizedPath);
+                            servletResource = resolveResource(normalizedPath);
                             if (servletResource != null) {
                                 break;
                             }
                         }
                     } else {
-                        servletResource = resolveServletResource(type);
+                        servletResource = resolveResource(type);
                     }
                     if (servletResource != null) {
-                        if (dependency.startsWith(".")) {
+                        if (dependency.startsWith("..")) {
                             // relative path
-                            String absolutePath = ResourceUtil.normalize(servletResource.getPath() + "/" + dependency);
+                            String absolutePath = ResourceUtil.normalize(caller.getPath() + "/" + dependency);
                             if (StringUtils.isNotEmpty(absolutePath)) {
-                                scriptResource = scriptingResourceResolver.resolve(absolutePath);
+                                scriptResource = resolveResource(absolutePath);
                             }
                         } else {
                             scriptResource = servletResource.getChild(dependency);
@@ -135,7 +133,7 @@ public class DependencyResolver {
         return reader;
     }
 
-    Resource resolveServletResource(String type) {
+    Resource resolveResource(String type) {
         Resource servletResource = scriptingResourceResolver.resolve(type);
         if (ResourceUtil.isNonExistingResource(servletResource)) {
             servletResource = scriptingResourceResolver.getResource(type);

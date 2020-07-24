@@ -90,12 +90,12 @@ public class JsEnvironment {
 
     private Bindings buildBindings(ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments, CommonJsModule commonJsModule) {
         Bindings bindings = new LazyBindings();
+        bindings.putAll(globalBindings);
         bindings.putAll(engineBindings);
         bindings.put(ScriptEngine.FILENAME, reader.getScriptName());
         bindings.put(Variables.MODULE, commonJsModule);
         bindings.put(Variables.EXPORTS, commonJsModule.getExports());
         bindings.put(Variables.CONSOLE, new Console(LoggerFactory.getLogger(reader.getScriptName())));
-        bindings.putAll(globalBindings);
         UseFunction useFunction = new UseFunction(this, dependencyResolver, bindings, arguments);
         bindings.put(Variables.JS_USE, useFunction);
         return bindings;
