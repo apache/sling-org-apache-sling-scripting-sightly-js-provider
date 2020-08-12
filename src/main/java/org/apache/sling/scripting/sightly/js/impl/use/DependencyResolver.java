@@ -80,11 +80,13 @@ public class DependencyResolver {
                             } else {
                                 scriptResource = hierarchyResource.getChild(dependency);
                             }
-                            String nextType = hierarchyResource.getResourceSuperType();
-                            if (nextType != null) {
-                                hierarchyResource = resolveResource(nextType);
-                            } else {
-                                hierarchyResource = null;
+                            if (scriptResource == null) {
+                                String nextType = hierarchyResource.getResourceSuperType();
+                                if (nextType != null) {
+                                    hierarchyResource = resolveResource(nextType);
+                                } else {
+                                    hierarchyResource = null;
+                                }
                             }
                         }
                     }
@@ -154,7 +156,7 @@ public class DependencyResolver {
         if (caller == null) {
             SlingScriptHelper scriptHelper = Utils.getHelper(bindings);
             if (scriptHelper != null) {
-                caller = scriptHelper.getScript().getScriptResource();
+                caller = scriptingResourceResolver.getResource(scriptHelper.getScript().getScriptResource().getPath());
             }
         }
         return caller;
