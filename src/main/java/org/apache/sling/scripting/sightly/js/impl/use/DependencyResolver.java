@@ -69,7 +69,7 @@ public class DependencyResolver {
                     String driverType = request.getResource().getResourceType();
                     Resource driver = resolveResource(driverType);
                     if (driver != null) {
-                        Resource hierarchyResource = getChildResource(callerType, driver);
+                        Resource hierarchyResource = getHierarchyResource(callerType, driver);
                         while (hierarchyResource != null && scriptResource == null) {
                             if (dependency.startsWith("..")) {
                                 // relative path
@@ -162,36 +162,58 @@ public class DependencyResolver {
         return caller;
     }
 
-    private Resource getChildResource(@NotNull Resource callerType, @NotNull Resource driverType) {
-        if (callerType.getPath().equals(driverType.getPath())) {
-            return callerType;
+    private Resource getHierarchyResource(@NotNull Resource caller, @NotNull Resource driver) {
+        if (caller.getPath().equals(driver.getPath())) {
+            return caller;
         }
-        if (isResourceType(callerType, driverType.getPath())) {
-            return callerType;
+        if (isResourceType(caller, driver)) {
+            return caller;
         }
-        if (isResourceType(driverType, callerType.getPath())) {
-            return driverType;
+        if (isResourceType(driver, caller)) {
+            return driver;
+        }
+        int callerOverlayIndex = 0;
+        int driverOverlayIndex = 0;
+        String callerRelativePath = null;
+        String driverRelativePath = null;
+        int spIndex = 0;
+        for (String sp : scriptingResourceResolver.getSearchPath()) {
+            if (caller.getPath().startsWith(sp)) {
+                callerRelativePath = caller.getPath().substring(sp.length());
+                callerOverlayIndex = spIndex;
+            }
+            if (driver.getPath().startsWith(sp)) {
+                driverRelativePath = driver.getPath().substring(sp.length());
+                driverOverlayIndex = spIndex;
+            }
+            if (callerRelativePath != null && driverRelativePath != null) {
+                break;
+            }
+            spIndex++;
+        }
+        if (callerRelativePath != null && callerRelativePath.equals(driverRelativePath)) {
+            if (callerOverlayIndex < driverOverlayIndex) {
+                return caller;
+            }
+            return driver;
         }
         return null;
     }
 
-    private boolean isResourceType(@NotNull Resource resource, String type) {
-        Resource typeResource = resolveResource(type);
-        if (typeResource != null) {
-            if (typeResource.getPath().equals(resource.getPath())) {
-                return true;
-            }
-            String resourceSuperType = resource.getResourceSuperType();
-            while (resourceSuperType != null) {
-                Resource intermediateType = resolveResource(resourceSuperType);
-                if (intermediateType != null) {
-                    if (intermediateType.getPath().equals(typeResource.getPath())) {
-                        return true;
-                    }
-                    resourceSuperType = intermediateType.getResourceSuperType();
-                } else {
-                    return false;
+    private boolean isResourceType(@NotNull Resource resource, @NotNull Resource parent) {
+        if (parent.getPath().equals(resource.getPath())) {
+            return true;
+        }
+        String resourceSuperType = resource.getResourceSuperType();
+        while (resourceSuperType != null) {
+            Resource intermediateType = resolveResource(resourceSuperType);
+            if (intermediateType != null) {
+                if (intermediateType.getPath().equals(parent.getPath())) {
+                    return true;
                 }
+                resourceSuperType = intermediateType.getResourceSuperType();
+            } else {
+                return false;
             }
         }
         return false;
