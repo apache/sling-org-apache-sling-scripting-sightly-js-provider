@@ -151,12 +151,12 @@ public class DependencyResolver {
         Resource caller = null;
         String callerName = (String) bindings.get(ScriptEngine.FILENAME);
         if (StringUtils.isNotEmpty(callerName)) {
-            caller = scriptingResourceResolver.getResource(callerName);
+            caller = resolveResource(callerName);
         }
         if (caller == null) {
             SlingScriptHelper scriptHelper = Utils.getHelper(bindings);
             if (scriptHelper != null) {
-                caller = scriptingResourceResolver.getResource(scriptHelper.getScript().getScriptResource().getPath());
+                caller = resolveResource(scriptHelper.getScript().getScriptResource().getPath());
             }
         }
         return caller;
