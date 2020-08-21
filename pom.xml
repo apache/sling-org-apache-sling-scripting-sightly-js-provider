@@ -33,7 +33,7 @@
     <!-- P R O J E C T                                                           -->
     <!-- ======================================================================= -->
     <artifactId>org.apache.sling.scripting.sightly.js.provider</artifactId>
-    <version>1.2.6</version>
+    <version>1.2.7-SNAPSHOT</version>
 
     <name>Apache Sling Scripting HTL JS Use Provider</name>
 
@@ -45,7 +45,7 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly-js-provider.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly-js-provider.git</developerConnection>
         <url>https://gitbox.apache.org/repos/asf?p=sling-org-apache-sling-scripting-sightly-js-provider.git</url>
-      <tag>org.apache.sling.scripting.sightly.js.provider-1.2.6</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <!-- ======================================================================= -->
