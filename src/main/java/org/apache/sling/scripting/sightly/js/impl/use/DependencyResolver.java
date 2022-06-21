@@ -126,18 +126,12 @@ public class DependencyResolver {
     private Resource resolveResource(String type) {
         Resource servletResource = null;
         if (type.startsWith("/")) {
-            servletResource = scriptingResourceResolver.resolve(type);
-            if (ResourceUtil.isNonExistingResource(servletResource)) {
-                servletResource = scriptingResourceResolver.getResource(type);
-            }
+            servletResource = scriptingResourceResolver.getResource(type);
         } else {
             for (String searchPath : scriptingResourceResolver.getSearchPath()) {
-                String absolutePath = ResourceUtil.normalize(searchPath + "/" + type);
+                String absolutePath = ResourceUtil.normalize(searchPath + type);
                 if (absolutePath != null) {
-                    servletResource = scriptingResourceResolver.resolve(absolutePath);
-                    if (ResourceUtil.isNonExistingResource(servletResource)) {
-                        servletResource = scriptingResourceResolver.getResource(type);
-                    }
+                    servletResource = scriptingResourceResolver.getResource(absolutePath);
                     if (servletResource != null) {
                         return servletResource;
                     }
