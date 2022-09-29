@@ -16,12 +16,10 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.js.impl;
 
-import java.util.Collections;
-
 import javax.script.Bindings;
-import javax.script.SimpleBindings;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.api.scripting.SlingBindings;
 import org.apache.sling.api.scripting.SlingScriptHelper;
 
@@ -31,7 +29,7 @@ import org.apache.sling.api.scripting.SlingScriptHelper;
 public class Utils {
     public static final String JS_EXTENSION = "js";
 
-    public static final Bindings EMPTY_BINDINGS = new SimpleBindings(Collections.<String, Object>emptyMap());
+    public static final Bindings EMPTY_BINDINGS = new LazyBindings();
 
     public static SlingScriptHelper getHelper(Bindings bindings) {
         return (SlingScriptHelper) bindings.get(SlingBindings.SLING);
