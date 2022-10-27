@@ -30,7 +30,6 @@ import java.util.Map;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
-import javax.script.SimpleBindings;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.IOUtils;
@@ -206,7 +205,7 @@ public class SlyBindingsValuesProvider {
                                     resource.getPath()
                             ),
                             createBindings(bindings, resource.getPath()),
-                            new SimpleBindings()
+                            new LazyBindings()
                     );
             Object obj = container.getResult();
             if (!(obj instanceof Function)) {
