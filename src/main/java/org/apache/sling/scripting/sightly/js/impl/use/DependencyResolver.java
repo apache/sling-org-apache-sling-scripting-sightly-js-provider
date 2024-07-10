@@ -67,7 +67,7 @@ public class DependencyResolver {
                 if (scriptResource == null && callerType != null) {
                     SlingHttpServletRequest request = (SlingHttpServletRequest) bindings.get(SlingBindings.REQUEST);
                     String driverType = request.getResource().getResourceType();
-                    Resource driver = resolveResource(driverType);
+                    Resource driver = scriptingResourceResolver.getResource(driverType);
                     if (driver != null) {
                         Resource hierarchyResource = getHierarchyResource(callerType, driver);
                         while (hierarchyResource != null && scriptResource == null) {
@@ -75,7 +75,7 @@ public class DependencyResolver {
                                 // relative path
                                 String absolutePath = ResourceUtil.normalize(hierarchyResource.getPath() + "/" + dependency);
                                 if (StringUtils.isNotEmpty(absolutePath)) {
-                                    scriptResource = resolveResource(absolutePath);
+                                    scriptResource = scriptingResourceResolver.getResource(absolutePath);
                                 }
                             } else {
                                 scriptResource = hierarchyResource.getChild(dependency);
@@ -83,7 +83,7 @@ public class DependencyResolver {
                             if (scriptResource == null) {
                                 String nextType = hierarchyResource.getResourceSuperType();
                                 if (nextType != null) {
-                                    hierarchyResource = resolveResource(nextType);
+                                    hierarchyResource = scriptingResourceResolver.getResource(nextType);
                                 } else {
                                     hierarchyResource = null;
                                 }
@@ -94,9 +94,9 @@ public class DependencyResolver {
                     if (scriptResource == null) {
                         if (dependency.startsWith("..")) {
                             // relative path
-                            String absolutePath = ResourceUtil.normalize(caller.getPath() + "/" + dependency);
+                            String absolutePath = ResourceUtil.normalize(callerType.getPath() + "/" + dependency);
                             if (StringUtils.isNotEmpty(absolutePath)) {
-                                scriptResource = resolveResource(absolutePath);
+                                scriptResource = scriptingResourceResolver.getResource(absolutePath);
                             }
                         } else {
                             scriptResource = callerType.getChild(dependency);
@@ -123,34 +123,16 @@ public class DependencyResolver {
         return reader;
     }
 
-    private Resource resolveResource(String type) {
-        Resource servletResource = null;
-        if (type.startsWith("/")) {
-            servletResource = scriptingResourceResolver.getResource(type);
-        } else {
-            for (String searchPath : scriptingResourceResolver.getSearchPath()) {
-                String absolutePath = ResourceUtil.normalize(searchPath + type);
-                if (absolutePath != null) {
-                    servletResource = scriptingResourceResolver.getResource(absolutePath);
-                    if (servletResource != null) {
-                        return servletResource;
-                    }
-                }
-            }
-        }
-        return servletResource;
-    }
-
     private Resource getCaller(Bindings bindings) {
         Resource caller = null;
         String callerName = (String) bindings.get(ScriptEngine.FILENAME);
         if (StringUtils.isNotEmpty(callerName)) {
-            caller = resolveResource(callerName);
+            caller = scriptingResourceResolver.getResource(callerName);
         }
         if (caller == null) {
             SlingScriptHelper scriptHelper = Utils.getHelper(bindings);
             if (scriptHelper != null) {
-                caller = resolveResource(scriptHelper.getScript().getScriptResource().getPath());
+                caller = scriptingResourceResolver.getResource(scriptHelper.getScript().getScriptResource().getPath());
             }
         }
         return caller;
@@ -200,7 +182,7 @@ public class DependencyResolver {
         }
         String resourceSuperType = resource.getResourceSuperType();
         while (resourceSuperType != null) {
-            Resource intermediateType = resolveResource(resourceSuperType);
+            Resource intermediateType = scriptingResourceResolver.getResource(resourceSuperType);
             if (intermediateType != null) {
                 if (intermediateType.getPath().equals(parent.getPath())) {
                     return true;
