@@ -90,13 +90,13 @@ public class SlyBindingsValuesProvider {
                         " dependency chain."
 
         )
-        String[] org_apache_sling_scripting_sightly_js_bindings() default "sightly:" + SlyBindingsValuesProvider.SLING_NS_PATH;
+        String[] org_apache_sling_scripting_sightly_js_bindings() default SlyBindingsValuesProvider.SLING_NS_PATH;
 
     }
 
     public static final String SCR_PROP_JS_BINDING_IMPLEMENTATIONS = "org.apache.sling.scripting.sightly.js.bindings";
 
-    public static final String SLING_NS_PATH = "/libs/sling/sightly/js/internal/sly.js";
+    public static final String SLING_NS_PATH = "sightly:/libs/sling/sightly/js/internal/sly.js";
     public static final String Q_PATH = "/libs/sling/sightly/js/3rd-party/q.js";
 
     private static final String REQ_NS = SlyBindingsValuesProvider.class.getCanonicalName();
@@ -285,7 +285,6 @@ public class SlyBindingsValuesProvider {
             LOGGER.error("Unable to compile the Q library at path " + Q_PATH + ".", e);
         } finally {
             Context.exit();
-            IOUtils.closeQuietly(reader);
         }
         return null;
     }
