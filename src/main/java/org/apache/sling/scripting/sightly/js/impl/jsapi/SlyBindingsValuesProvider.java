@@ -21,7 +21,6 @@ package org.apache.sling.scripting.sightly.js.impl.jsapi;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +31,6 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.scripting.LazyBindings;
@@ -145,12 +143,12 @@ public class SlyBindingsValuesProvider {
 
     @Activate
     protected void activate(Configuration configuration) {
-        String[] factories = PropertiesUtil.toStringArray(
+        String[] configuredFactories = PropertiesUtil.toStringArray(
                 configuration.org_apache_sling_scripting_sightly_js_bindings(),
                 new String[]{SLING_NS_PATH}
         );
-        scriptPaths = new LinkedHashMap<>(factories.length);
-        for (String f : factories) {
+        scriptPaths = new LinkedHashMap<>(configuredFactories.length);
+        for (String f : configuredFactories) {
             String[] parts = f.split(":");
             if (parts.length == 2) {
                 scriptPaths.put(parts[0], parts[1]);
@@ -197,24 +195,24 @@ public class SlyBindingsValuesProvider {
         if (resource == null) {
             throw new SightlyException("Sly namespace loader could not find the following script: " + path);
         }
-        try {
-            AsyncContainer container =
-                    jsEnvironment.runScript(
-                            new ScriptNameAwareReader(
-                                    new StringReader(IOUtils.toString(resource.adaptTo(InputStream.class), StandardCharsets.UTF_8)),
-                                    resource.getPath()
-                            ),
-                            createBindings(bindings, resource.getPath()),
-                            new LazyBindings()
-                    );
-            Object obj = container.getResult();
-            if (!(obj instanceof Function)) {
-                throw new SightlyException("Script " + path + " was expected to return a function.");
-            }
-            return (Function) obj;
-        } catch (IOException e) {
-            throw new SightlyException("Cannot read script " + path + " .");
+        InputStream inputStream = resource.adaptTo(InputStream.class);
+        if (inputStream == null) {
+            throw new SightlyException("Sly namespace loader could not read the following script: " + path);
         }
+        AsyncContainer container =
+                jsEnvironment.runScript(
+                        new ScriptNameAwareReader(
+                                new InputStreamReader(inputStream, StandardCharsets.UTF_8),
+                                resource.getPath()
+                        ),
+                        createBindings(bindings, resource.getPath()),
+                        new LazyBindings()
+                );
+        Object obj = container.getResult();
+        if (!(obj instanceof Function)) {
+            throw new SightlyException("Script " + path + " was expected to return a function.");
+        }
+        return (Function) obj;
     }
 
     private Bindings createBindings(Bindings global, String factoryPath) {
@@ -268,14 +266,12 @@ public class SlyBindingsValuesProvider {
         Context context = Context.enter();
         context.initStandardObjects();
         context.setOptimizationLevel(9);
-        InputStream reader = null;
-        try {
-            Resource resource = resolver.getResource(Q_PATH);
-            if (resource == null) {
-                LOGGER.warn("Could not load Q library at path: " + Q_PATH);
-                return null;
-            }
-            reader = resource.adaptTo(InputStream.class);
+        Resource resource = resolver.getResource(Q_PATH);
+        if (resource == null) {
+            LOGGER.warn("Could not load Q library at path: " + Q_PATH);
+            return null;
+        }
+        try (InputStream reader = resource.adaptTo(InputStream.class)) {
             if (reader == null) {
                 LOGGER.warn("Could not read content of Q library");
                 return null;

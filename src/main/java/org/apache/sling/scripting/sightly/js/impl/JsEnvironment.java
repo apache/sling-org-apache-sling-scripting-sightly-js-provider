@@ -18,6 +18,8 @@
  ******************************************************************************/
 package org.apache.sling.scripting.sightly.js.impl;
 
+import java.io.Closeable;
+
 import javax.script.Bindings;
 import javax.script.Compilable;
 import javax.script.ScriptContext;
@@ -25,7 +27,6 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import javax.script.SimpleScriptContext;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
 import org.apache.sling.scripting.sightly.SightlyException;
@@ -129,9 +130,17 @@ public class JsEnvironment {
             } catch (ScriptException e) {
                 throw new SightlyException(e);
             } finally {
-                IOUtils.closeQuietly(reader);
+                closeQuietly(reader);
             }
         });
+    }
+
+    private void closeQuietly(Closeable closeable) {
+        try {
+            closeable.close();
+        } catch (Exception e) {
+            // ignore
+        }
     }
 
 
