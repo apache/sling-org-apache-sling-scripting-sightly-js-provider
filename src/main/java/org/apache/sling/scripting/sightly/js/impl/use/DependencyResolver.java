@@ -19,15 +19,13 @@
 
 package org.apache.sling.scripting.sightly.js.impl.use;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.nio.charset.StandardCharsets;
-
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
 
-import org.apache.commons.io.IOUtils;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.SlingHttpServletRequest;
 import org.apache.sling.api.resource.Resource;
@@ -56,71 +54,60 @@ public class DependencyResolver {
         if (!Utils.isJsScript(dependency)) {
             throw new SightlyException("Only JS scripts are allowed as dependencies. Invalid dependency: " + dependency);
         }
-        ScriptNameAwareReader reader = null;
-        IOException ioException = null;
-        try {
-            // attempt to retrieve the dependency directly (as an absolute path or relative to the search paths)
-            Resource scriptResource = scriptingResourceResolver.getResource(dependency);
-            Resource caller = getCaller(bindings);
-            if (caller != null) {
-                Resource callerType = caller.getParent();
-                if (scriptResource == null && callerType != null) {
-                    SlingHttpServletRequest request = (SlingHttpServletRequest) bindings.get(SlingBindings.REQUEST);
-                    String driverType = request.getResource().getResourceType();
-                    Resource driver = scriptingResourceResolver.getResource(driverType);
-                    if (driver != null) {
-                        Resource hierarchyResource = getHierarchyResource(callerType, driver);
-                        while (hierarchyResource != null && scriptResource == null) {
-                            if (dependency.startsWith("..")) {
-                                // relative path
-                                String absolutePath = ResourceUtil.normalize(hierarchyResource.getPath() + "/" + dependency);
-                                if (StringUtils.isNotEmpty(absolutePath)) {
-                                    scriptResource = scriptingResourceResolver.getResource(absolutePath);
-                                }
-                            } else {
-                                scriptResource = hierarchyResource.getChild(dependency);
-                            }
-                            if (scriptResource == null) {
-                                String nextType = hierarchyResource.getResourceSuperType();
-                                if (nextType != null) {
-                                    hierarchyResource = scriptingResourceResolver.getResource(nextType);
-                                } else {
-                                    hierarchyResource = null;
-                                }
-                            }
-                        }
-                    }
-                    // cannot find a dependency relative to the resource type; locate it solely based on the caller
-                    if (scriptResource == null) {
+        // attempt to retrieve the dependency directly (as an absolute path or relative to the search paths)
+        Resource scriptResource = scriptingResourceResolver.getResource(dependency);
+        Resource caller = getCaller(bindings);
+        if (caller != null) {
+            Resource callerType = caller.getParent();
+            if (scriptResource == null && callerType != null) {
+                SlingHttpServletRequest request = (SlingHttpServletRequest) bindings.get(SlingBindings.REQUEST);
+                String driverType = request.getResource().getResourceType();
+                Resource driver = scriptingResourceResolver.getResource(driverType);
+                if (driver != null) {
+                    Resource hierarchyResource = getHierarchyResource(callerType, driver);
+                    while (hierarchyResource != null && scriptResource == null) {
                         if (dependency.startsWith("..")) {
                             // relative path
-                            String absolutePath = ResourceUtil.normalize(callerType.getPath() + "/" + dependency);
+                            String absolutePath = ResourceUtil.normalize(hierarchyResource.getPath() + "/" + dependency);
                             if (StringUtils.isNotEmpty(absolutePath)) {
                                 scriptResource = scriptingResourceResolver.getResource(absolutePath);
                             }
                         } else {
-                            scriptResource = callerType.getChild(dependency);
+                            scriptResource = hierarchyResource.getChild(dependency);
+                        }
+                        if (scriptResource == null) {
+                            String nextType = hierarchyResource.getResourceSuperType();
+                            if (nextType != null) {
+                                hierarchyResource = scriptingResourceResolver.getResource(nextType);
+                            } else {
+                                hierarchyResource = null;
+                            }
                         }
                     }
                 }
+                // cannot find a dependency relative to the resource type; locate it solely based on the caller
+                if (scriptResource == null) {
+                    if (dependency.startsWith("..")) {
+                        // relative path
+                        String absolutePath = ResourceUtil.normalize(callerType.getPath() + "/" + dependency);
+                        if (StringUtils.isNotEmpty(absolutePath)) {
+                            scriptResource = scriptingResourceResolver.getResource(absolutePath);
+                        }
+                    } else {
+                        scriptResource = callerType.getChild(dependency);
+                    }
+                }
             }
-            if (scriptResource == null) {
-                throw new SightlyException(String.format("Unable to load script dependency %s.", dependency));
-            }
-            InputStream scriptStream = scriptResource.adaptTo(InputStream.class);
-            if (scriptStream == null) {
-                throw new SightlyException(String.format("Unable to read script %s.", dependency));
-            }
-            reader = new ScriptNameAwareReader(new StringReader(IOUtils.toString(scriptStream, StandardCharsets.UTF_8)),
-                    scriptResource.getPath());
-            IOUtils.closeQuietly(scriptStream);
-        } catch (IOException e) {
-            ioException = e;
         }
-        if (ioException != null) {
-            throw new SightlyException(String.format("Unable to load script dependency %s.", dependency), ioException);
+        if (scriptResource == null) {
+            throw new SightlyException(String.format("Unable to load script dependency %s.", dependency));
         }
-        return reader;
+        InputStream scriptStream = scriptResource.adaptTo(InputStream.class);
+        if (scriptStream == null) {
+            throw new SightlyException(String.format("Unable to read script %s.", dependency));
+        }
+        return new ScriptNameAwareReader(new InputStreamReader(scriptStream, StandardCharsets.UTF_8),
+                scriptResource.getPath());
     }
 
     private Resource getCaller(Bindings bindings) {
