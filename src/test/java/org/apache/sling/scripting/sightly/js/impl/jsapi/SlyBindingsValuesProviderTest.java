@@ -80,7 +80,7 @@ class SlyBindingsValuesProviderTest {
     }
 
     @Test
-    void testResourceLoading() throws IOException {
+    void testResourceLoading_streamNotRead() throws IOException {
         assertNotNull(inputStream);
         SlyBindingsValuesProvider provider = new SlyBindingsValuesProvider();
         provider.activate(configuration);

@@ -89,7 +89,7 @@ class DependencyResolverTest {
     }
 
     @Test
-    void testStreamLoading() throws IOException {
+    void testResourceLoading_streamNotRead() throws IOException {
         InputStream stream = mock(InputStream.class);
 
         // Configure the mock to return data and simulate EOF
