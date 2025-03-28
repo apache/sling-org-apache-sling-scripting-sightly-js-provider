@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,16 +15,16 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl.async;
 
 import org.apache.sling.scripting.sightly.SightlyException;
+import org.apache.sling.scripting.sightly.js.impl.loop.EventLoopInterop;
 import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-import org.apache.sling.scripting.sightly.js.impl.loop.EventLoopInterop;
 
 /**
  *
@@ -55,12 +55,12 @@ public class AsyncExtractor {
             EventLoopInterop.schedule(context, new Runnable() {
                 @Override
                 public void run() {
-                    ScriptableObject.callMethod(promise, THEN_METHOD,
-                            new Object[] {successHandler, errorHandler});
+                    ScriptableObject.callMethod(promise, THEN_METHOD, new Object[] {successHandler, errorHandler});
                 }
             });
             if (errorContainer.isCompleted()) {
-                throw new SightlyException("Promise has completed with failure: " + Context.toString(errorContainer.getResult()));
+                throw new SightlyException(
+                        "Promise has completed with failure: " + Context.toString(errorContainer.getResult()));
             }
         } finally {
             Context.exit();

@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Licensed to the Apache Software Foundation (ASF) under one
   ~ or more contributor license agreements.  See the NOTICE file
@@ -37,38 +37,29 @@
 
     <name>Apache Sling Scripting HTL JS Use Provider</name>
 
-    <description>
-        The Apache Sling HTL JavaScript Use Provider adds support for accessing JS scripts from HTL's Use-API.
-    </description>
-
-    <properties>
-        <sling.java.version>8</sling.java.version>
-    </properties>
+    <description>The Apache Sling HTL JavaScript Use Provider adds support for accessing JS scripts from HTL's Use-API.</description>
 
     <scm>
         <connection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly-js-provider.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/sling-org-apache-sling-scripting-sightly-js-provider.git</developerConnection>
+        <tag>HEAD</tag>
         <url>https://github.com/apache/sling-org-apache-sling-scripting-sightly-js-provider.git</url>
-      <tag>HEAD</tag>
-  </scm>
+    </scm>
 
-    <!-- ======================================================================= -->
-    <!-- B U I L D                                                               -->
-    <!-- ======================================================================= -->
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <configuration>
-                    <!-- No javadocs -->
-                    <excludePackageNames>
-                        org.apache.sling.scripting.sightly.js.impl
-                    </excludePackageNames>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <properties>
+        <sling.java.version>8</sling.java.version>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.12.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <!-- ======================================================================= -->
     <!-- D E P E N D E N C I E S                                                 -->
@@ -144,7 +135,6 @@
             <scope>provided</scope>
         </dependency>
 
-
         <!-- Rhino -->
         <dependency>
             <groupId>org.apache.servicemix.bundles</groupId>
@@ -176,16 +166,21 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>5.12.1</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+
+    <!-- ======================================================================= -->
+    <!-- B U I L D                                                               -->
+    <!-- ======================================================================= -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <!-- No javadocs -->
+                    <excludePackageNames>org.apache.sling.scripting.sightly.js.impl</excludePackageNames>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

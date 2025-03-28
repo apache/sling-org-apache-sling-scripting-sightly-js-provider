@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,17 +15,16 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
-
+ */
 package org.apache.sling.scripting.sightly.js.impl.use;
+
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
 
 import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
@@ -53,7 +52,11 @@ public class UseFunction extends BaseFunction {
     private final Scriptable thisObj;
     private final Bindings globalBindings;
 
-    public UseFunction(JsEnvironment jsEnvironment, DependencyResolver dependencyResolver, Bindings globalBindings, Bindings arguments) {
+    public UseFunction(
+            JsEnvironment jsEnvironment,
+            DependencyResolver dependencyResolver,
+            Bindings globalBindings,
+            Bindings arguments) {
         this.jsEnvironment = jsEnvironment;
         this.dependencyResolver = dependencyResolver;
         this.globalBindings = globalBindings;
@@ -106,7 +109,8 @@ public class UseFunction extends BaseFunction {
         return asyncContainer;
     }
 
-    private void callImmediate(final Function callback, final AsyncContainer asyncContainer, final Context cx, final Scriptable scope) {
+    private void callImmediate(
+            final Function callback, final AsyncContainer asyncContainer, final Context cx, final Scriptable scope) {
         EventLoopInterop.schedule(cx, () -> {
             Object value = JsUtils.callFn(callback, cx, scope, thisObj, new Object[0]);
             asyncContainer.complete(value);

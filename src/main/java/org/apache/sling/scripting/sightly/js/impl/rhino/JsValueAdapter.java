@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl.rhino;
 
 import java.util.ArrayList;
@@ -25,13 +25,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.sling.scripting.sightly.js.impl.async.AsyncContainer;
+import org.apache.sling.scripting.sightly.js.impl.async.AsyncExtractor;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Wrapper;
-import org.apache.sling.scripting.sightly.js.impl.async.AsyncContainer;
-import org.apache.sling.scripting.sightly.js.impl.async.AsyncExtractor;
 
 /**
  * Converts JS objects to Java objects
@@ -71,7 +71,7 @@ public class JsValueAdapter {
             return extractScriptable((ScriptableObject) jsValue);
         }
         if (jsValue instanceof CharSequence) {
-            //convert any string-like type to plain java strings
+            // convert any string-like type to plain java strings
             return jsValue.toString();
         }
         if (jsValue instanceof Map) {
@@ -115,7 +115,9 @@ public class JsValueAdapter {
 
     private Object extractScriptable(ScriptableObject scriptableObject) {
         Object obj = tryKnownConversion(scriptableObject);
-        if (obj != null) { return obj; }
+        if (obj != null) {
+            return obj;
+        }
         if (scriptableObject instanceof NativeArray) {
             return convertNativeArray((NativeArray) scriptableObject);
         }

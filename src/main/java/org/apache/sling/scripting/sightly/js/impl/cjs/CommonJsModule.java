@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl.cjs;
 
 import org.mozilla.javascript.Scriptable;
@@ -30,7 +30,6 @@ public class CommonJsModule extends ScriptableObject {
 
     private Object exports = new ExportsObject();
     private boolean modifiedModule;
-
 
     @Override
     public Object get(String name, Scriptable start) {

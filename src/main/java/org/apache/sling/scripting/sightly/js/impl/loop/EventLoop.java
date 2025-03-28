@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl.loop;
 
 import java.util.LinkedList;
@@ -24,7 +24,6 @@ import java.util.Queue;
 import org.apache.sling.scripting.sightly.SightlyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * Simulates an event loop for the Rhino JS engine.
@@ -61,7 +60,7 @@ public class EventLoop {
                     task.run();
                 } catch (Exception e) {
                     if (thrownException == null) {
-                        thrownException = e; //first exception
+                        thrownException = e; // first exception
                     } else {
                         log.error("Additional error occurred while running JS script: ", e);
                     }
@@ -74,5 +73,4 @@ public class EventLoop {
             isRunning = false;
         }
     }
-
 }
