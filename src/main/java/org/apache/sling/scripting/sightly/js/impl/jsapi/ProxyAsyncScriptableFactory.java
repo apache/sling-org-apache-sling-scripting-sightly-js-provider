@@ -1,26 +1,28 @@
-/*******************************************************************************
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
  *
  *   http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- ******************************************************************************/
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.sling.scripting.sightly.js.impl.jsapi;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sling.api.resource.ResourceResolver;
@@ -35,9 +37,7 @@ import org.osgi.service.component.annotations.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Component(
-        service = ProxyAsyncScriptableFactory.class
-)
+@Component(service = ProxyAsyncScriptableFactory.class)
 public class ProxyAsyncScriptableFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyAsyncScriptableFactory.class);
@@ -83,8 +83,10 @@ public class ProxyAsyncScriptableFactory {
                 if (StringUtils.isNotEmpty(script)) {
                     if (scriptNSUse.add(clazz + ":" + script)) {
                         LOGGER.warn(
-                            "Script {} uses the deprecated asynchronous API provided by the '{}' namespace. Please refactor the script to" +
-                                " use the synchronous API provided by the org.apache.sling.scripting.javascript bundle.", script, clazz);
+                                "Script {} uses the deprecated asynchronous API provided by the '{}' namespace. Please refactor the script to"
+                                        + " use the synchronous API provided by the org.apache.sling.scripting.javascript bundle.",
+                                script,
+                                clazz);
                     }
                 }
                 return hybridObject.get(name, start);

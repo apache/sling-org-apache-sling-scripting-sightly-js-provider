@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl;
 
 import javax.script.Bindings;
@@ -46,21 +46,17 @@ import org.osgi.service.metatype.annotations.AttributeDefinition;
 @Component(
         service = UseProvider.class,
         configurationPid = "org.apache.sling.scripting.sightly.js.impl.JsUseProvider",
-        property = {
-                Constants.SERVICE_RANKING + ":Integer=80"
-        }
-)
+        property = {Constants.SERVICE_RANKING + ":Integer=80"})
 public class JsUseProvider implements UseProvider {
 
     @interface Configuration {
 
         @AttributeDefinition(
                 name = "Service Ranking",
-                description = "The Service Ranking value acts as the priority with which this Use Provider is queried to return an " +
-                        "Use-object. A higher value represents a higher priority."
-        )
+                description =
+                        "The Service Ranking value acts as the priority with which this Use Provider is queried to return an "
+                                + "Use-object. A higher value represents a higher priority.")
         int service_ranking() default 80;
-
     }
 
     private static final String JS_ENGINE_NAME = "rhino";
@@ -84,11 +80,13 @@ public class JsUseProvider implements UseProvider {
         }
         ScriptEngine jsEngine = scriptEngineManager.getEngineByName(JS_ENGINE_NAME);
         if (jsEngine == null) {
-            return ProviderOutcome.failure(new SightlyException("Failed to obtain a " + JS_ENGINE_NAME + " JavaScript engine."));
+            return ProviderOutcome.failure(
+                    new SightlyException("Failed to obtain a " + JS_ENGINE_NAME + " JavaScript engine."));
         }
         JsEnvironment environment = null;
         try {
-            ResourceResolver slingScriptingResolver = scriptingResourceResolverProvider.getRequestScopedResourceResolver();
+            ResourceResolver slingScriptingResolver =
+                    scriptingResourceResolverProvider.getRequestScopedResourceResolver();
             DependencyResolver dependencyResolver = new DependencyResolver(slingScriptingResolver);
             environment = new JsEnvironment(jsEngine, dependencyResolver);
             environment.initialize();

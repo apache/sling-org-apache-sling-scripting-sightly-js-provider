@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,7 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl.rhino;
 
 import java.util.HashSet;
@@ -26,7 +26,6 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-
 
 /**
  * Instances of this class can be used in both HTL &amp; JavaScript scripts.
@@ -60,7 +59,7 @@ public class HybridObject implements Scriptable, Record<Object> {
     public Set<String> getPropertyNames() {
         Object[] properties = scriptable.getIds();
         Set<String> keys = new HashSet<String>();
-        for (Object property: properties) {
+        for (Object property : properties) {
             if (property instanceof String) {
                 keys.add((String) property);
             }

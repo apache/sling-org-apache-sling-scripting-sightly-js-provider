@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,10 +15,8 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl;
-
-import java.io.Closeable;
 
 import javax.script.Bindings;
 import javax.script.Compilable;
@@ -26,6 +24,8 @@ import javax.script.ScriptContext;
 import javax.script.ScriptEngine;
 import javax.script.ScriptException;
 import javax.script.SimpleScriptContext;
+
+import java.io.Closeable;
 
 import org.apache.sling.api.scripting.LazyBindings;
 import org.apache.sling.scripting.core.ScriptNameAwareReader;
@@ -53,8 +53,7 @@ public class JsEnvironment {
     private final DependencyResolver dependencyResolver;
     private EventLoop eventLoop;
 
-    public JsEnvironment(@NotNull ScriptEngine jsEngine,
-                         @NotNull DependencyResolver dependencyResolver) {
+    public JsEnvironment(@NotNull ScriptEngine jsEngine, @NotNull DependencyResolver dependencyResolver) {
         this.jsEngine = jsEngine;
         this.dependencyResolver = dependencyResolver;
         engineBindings = new LazyBindings();
@@ -75,7 +74,8 @@ public class JsEnvironment {
         Context.exit();
     }
 
-    public void runScript(ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments, UnaryCallback callback) {
+    public void runScript(
+            ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments, UnaryCallback callback) {
         ScriptContext scriptContext = new SimpleScriptContext();
         CommonJsModule module = new CommonJsModule();
         Bindings scriptBindings = buildBindings(reader, globalBindings, arguments, module);
@@ -89,7 +89,8 @@ public class JsEnvironment {
         return asyncContainer;
     }
 
-    private Bindings buildBindings(ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments, CommonJsModule commonJsModule) {
+    private Bindings buildBindings(
+            ScriptNameAwareReader reader, Bindings globalBindings, Bindings arguments, CommonJsModule commonJsModule) {
         Bindings bindings = new LazyBindings();
         bindings.putAll(globalBindings);
         bindings.putAll(engineBindings);
@@ -106,7 +107,8 @@ public class JsEnvironment {
         eventLoop.schedule(scriptTask(reader, scriptContext, callback));
     }
 
-    private Task scriptTask(final ScriptNameAwareReader reader, final ScriptContext scriptContext, final UnaryCallback callback) {
+    private Task scriptTask(
+            final ScriptNameAwareReader reader, final ScriptContext scriptContext, final UnaryCallback callback) {
         return new Task(() -> {
             try {
                 Object result;
@@ -116,8 +118,9 @@ public class JsEnvironment {
                     result = jsEngine.eval(reader, scriptContext);
                 }
                 if (result == null) {
-                    CommonJsModule commonJsModule =
-                        (CommonJsModule) scriptContext.getBindings(ScriptContext.ENGINE_SCOPE).get(Variables.MODULE);
+                    CommonJsModule commonJsModule = (CommonJsModule) scriptContext
+                            .getBindings(ScriptContext.ENGINE_SCOPE)
+                            .get(Variables.MODULE);
                     if (commonJsModule != null && commonJsModule.isModified()) {
                         result = commonJsModule.getExports();
                     }
@@ -142,6 +145,4 @@ public class JsEnvironment {
             // ignore
         }
     }
-
-
 }

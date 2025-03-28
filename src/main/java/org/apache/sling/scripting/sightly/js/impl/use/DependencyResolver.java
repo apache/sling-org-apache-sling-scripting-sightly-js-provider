@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,8 +15,7 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
-
+ */
 package org.apache.sling.scripting.sightly.js.impl.use;
 
 import javax.script.Bindings;
@@ -52,7 +51,8 @@ public class DependencyResolver {
 
     public @Nullable ScriptNameAwareReader resolve(Bindings bindings, String dependency) {
         if (!Utils.isJsScript(dependency)) {
-            throw new SightlyException("Only JS scripts are allowed as dependencies. Invalid dependency: " + dependency);
+            throw new SightlyException(
+                    "Only JS scripts are allowed as dependencies. Invalid dependency: " + dependency);
         }
         // attempt to retrieve the dependency directly (as an absolute path or relative to the search paths)
         Resource scriptResource = scriptingResourceResolver.getResource(dependency);
@@ -68,7 +68,8 @@ public class DependencyResolver {
                     while (hierarchyResource != null && scriptResource == null) {
                         if (dependency.startsWith("..")) {
                             // relative path
-                            String absolutePath = ResourceUtil.normalize(hierarchyResource.getPath() + "/" + dependency);
+                            String absolutePath =
+                                    ResourceUtil.normalize(hierarchyResource.getPath() + "/" + dependency);
                             if (StringUtils.isNotEmpty(absolutePath)) {
                                 scriptResource = scriptingResourceResolver.getResource(absolutePath);
                             }
@@ -106,8 +107,8 @@ public class DependencyResolver {
         if (scriptStream == null) {
             throw new SightlyException(String.format("Unable to read script %s.", dependency));
         }
-        return new ScriptNameAwareReader(new InputStreamReader(scriptStream, StandardCharsets.UTF_8),
-                scriptResource.getPath());
+        return new ScriptNameAwareReader(
+                new InputStreamReader(scriptStream, StandardCharsets.UTF_8), scriptResource.getPath());
     }
 
     private Resource getCaller(Bindings bindings) {
@@ -119,7 +120,8 @@ public class DependencyResolver {
         if (caller == null) {
             SlingScriptHelper scriptHelper = Utils.getHelper(bindings);
             if (scriptHelper != null) {
-                caller = scriptingResourceResolver.getResource(scriptHelper.getScript().getScriptResource().getPath());
+                caller = scriptingResourceResolver.getResource(
+                        scriptHelper.getScript().getScriptResource().getPath());
             }
         }
         return caller;

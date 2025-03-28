@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,8 +15,12 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl.jsapi;
+
+import javax.script.Bindings;
+import javax.script.ScriptEngine;
+import javax.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,10 +30,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import javax.script.Bindings;
-import javax.script.ScriptEngine;
-import javax.servlet.http.HttpServletRequest;
 
 import org.apache.sling.api.resource.Resource;
 import org.apache.sling.api.resource.ResourceResolver;
@@ -67,29 +67,22 @@ import org.slf4j.LoggerFactory;
  */
 @Component(
         service = SlyBindingsValuesProvider.class,
-        configurationPid = "org.apache.sling.scripting.sightly.js.impl.jsapi.SlyBindingsValuesProvider"
-)
-@Designate(
-        ocd = SlyBindingsValuesProvider.Configuration.class
-)
+        configurationPid = "org.apache.sling.scripting.sightly.js.impl.jsapi.SlyBindingsValuesProvider")
+@Designate(ocd = SlyBindingsValuesProvider.Configuration.class)
 @SuppressWarnings("unused")
 public class SlyBindingsValuesProvider {
 
     @ObjectClassDefinition(
             name = "Apache Sling Scripting HTL JavaScript Use-API Factories Configuration",
-            description = "HTL JavaScript Use-API Factories configuration options"
-    )
+            description = "HTL JavaScript Use-API Factories configuration options")
     @interface Configuration {
 
         @AttributeDefinition(
                 name = "Script Factories",
-                description = "Script factories to load in the bindings map. The entries should be in the form " +
-                        "'namespace:/path/from/repository'. If the factories depend on each other, add them in the correct order of their" +
-                        " dependency chain."
-
-        )
+                description = "Script factories to load in the bindings map. The entries should be in the form "
+                        + "'namespace:/path/from/repository'. If the factories depend on each other, add them in the correct order of their"
+                        + " dependency chain.")
         String[] org_apache_sling_scripting_sightly_js_bindings() default SlyBindingsValuesProvider.SLING_NS_PATH;
-
     }
 
     public static final String SCR_PROP_JS_BINDING_IMPLEMENTATIONS = "org.apache.sling.scripting.sightly.js.bindings";
@@ -144,9 +137,7 @@ public class SlyBindingsValuesProvider {
     @Activate
     protected void activate(Configuration configuration) {
         String[] configuredFactories = PropertiesUtil.toStringArray(
-                configuration.org_apache_sling_scripting_sightly_js_bindings(),
-                new String[]{SLING_NS_PATH}
-        );
+                configuration.org_apache_sling_scripting_sightly_js_bindings(), new String[] {SLING_NS_PATH});
         scriptPaths = new LinkedHashMap<>(configuredFactories.length);
         for (String f : configuredFactories) {
             String[] parts = f.split(":");
@@ -165,7 +156,6 @@ public class SlyBindingsValuesProvider {
             factories.clear();
         }
     }
-
 
     private void addBinding(Context context, Function factory, Bindings bindings, String globalName, Object qInstance) {
         if (factory == null) {
@@ -190,7 +180,8 @@ public class SlyBindingsValuesProvider {
         }
     }
 
-    private Function loadFactory(ResourceResolver resolver, JsEnvironment jsEnvironment, String path, Bindings bindings) {
+    private Function loadFactory(
+            ResourceResolver resolver, JsEnvironment jsEnvironment, String path, Bindings bindings) {
         Resource resource = resolver.getResource(path);
         if (resource == null) {
             throw new SightlyException("Sly namespace loader could not find the following script: " + path);
@@ -199,15 +190,11 @@ public class SlyBindingsValuesProvider {
         if (inputStream == null) {
             throw new SightlyException("Sly namespace loader could not read the following script: " + path);
         }
-        AsyncContainer container =
-                jsEnvironment.runScript(
-                        new ScriptNameAwareReader(
-                                new InputStreamReader(inputStream, StandardCharsets.UTF_8),
-                                resource.getPath()
-                        ),
-                        createBindings(bindings, resource.getPath()),
-                        new LazyBindings()
-                );
+        AsyncContainer container = jsEnvironment.runScript(
+                new ScriptNameAwareReader(
+                        new InputStreamReader(inputStream, StandardCharsets.UTF_8), resource.getPath()),
+                createBindings(bindings, resource.getPath()),
+                new LazyBindings());
         Object obj = container.getResult();
         if (!(obj instanceof Function)) {
             throw new SightlyException("Script " + path + " was expected to return a function.");
@@ -284,5 +271,4 @@ public class SlyBindingsValuesProvider {
         }
         return null;
     }
-
 }

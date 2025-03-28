@@ -1,4 +1,4 @@
-/*******************************************************************************
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -15,15 +15,15 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- ******************************************************************************/
+ */
 package org.apache.sling.scripting.sightly.js.impl.async;
 
+import org.apache.sling.scripting.sightly.js.impl.loop.EventLoopInterop;
+import org.apache.sling.scripting.sightly.js.impl.rhino.JsUtils;
 import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
-import org.apache.sling.scripting.sightly.js.impl.loop.EventLoopInterop;
-import org.apache.sling.scripting.sightly.js.impl.rhino.JsUtils;
 
 /**
  * Timing function for JS scripts that use async constructs
@@ -32,8 +32,7 @@ public final class TimingFunction extends BaseFunction {
 
     public static final TimingFunction INSTANCE = new TimingFunction();
 
-    private TimingFunction() {
-    }
+    private TimingFunction() {}
 
     @Override
     public Object call(final Context cx, final Scriptable scope, Scriptable thisObj, Object[] args) {
