@@ -20,7 +20,7 @@ package org.apache.sling.scripting.sightly.js.impl;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
+import javax.script.ScriptEngineFactory;
 
 import org.apache.sling.api.resource.ResourceResolver;
 import org.apache.sling.api.scripting.LazyBindings;
@@ -62,8 +62,8 @@ public class JsUseProvider implements UseProvider {
     private static final String JS_ENGINE_NAME = "rhino";
     private static final JsValueAdapter jsValueAdapter = new JsValueAdapter(new AsyncExtractor());
 
-    @Reference
-    private ScriptEngineManager scriptEngineManager;
+    @Reference(target = "(names=Rhino)")
+    private ScriptEngineFactory scriptEngineFactory;
 
     @Reference
     private ProxyAsyncScriptableFactory proxyAsyncScriptableFactory;
@@ -78,7 +78,7 @@ public class JsUseProvider implements UseProvider {
         if (!Utils.isJsScript(identifier)) {
             return ProviderOutcome.failure();
         }
-        ScriptEngine jsEngine = scriptEngineManager.getEngineByName(JS_ENGINE_NAME);
+        ScriptEngine jsEngine = scriptEngineFactory.getScriptEngine();
         if (jsEngine == null) {
             return ProviderOutcome.failure(
                     new SightlyException("Failed to obtain a " + JS_ENGINE_NAME + " JavaScript engine."));
