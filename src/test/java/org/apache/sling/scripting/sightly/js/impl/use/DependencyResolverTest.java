@@ -330,6 +330,96 @@ class DependencyResolverTest {
                 () -> dependencyResolver.resolve(bindings, "head.js"));
     }
 
+    /**
+     * Fallback climb must also resolve {@code ../}-relative dependencies from a super type.
+     */
+    @Test
+    void resolveInheritedDependency_relativeParentPathViaCallerFallback() {
+        String relativeDependency = "../shared.js";
+        String sharedJsPath = "/libs/wcm/foundation/components/shared.js";
+
+        Resource libsXf = mockResource(LIBS_XF, FOUNDATION_TYPE);
+        Resource appsXf = mockResource(APPS_XF, null);
+        Resource foundation = mockResource(LIBS_FOUNDATION, null);
+        Resource sharedJs = mockJsResource(sharedJsPath);
+        Resource callerHtl = mockResource(CALLER_HTL, "nt:file");
+        Resource contentResource = mockContent("/content/xf/master/jcr:content", XF_TYPE);
+
+        when(callerHtl.getParent()).thenReturn(libsXf);
+        when(scriptingResourceResolver.getResource(any())).thenAnswer(invocation -> {
+            String path = invocation.getArgument(0);
+            if (CALLER_HTL.equals(path)) {
+                return callerHtl;
+            }
+            if (relativeDependency.equals(path)) {
+                return null;
+            }
+            if (XF_TYPE.equals(path) || APPS_XF.equals(path)) {
+                return appsXf;
+            }
+            if (LIBS_XF.equals(path)) {
+                return libsXf;
+            }
+            if (FOUNDATION_TYPE.equals(path) || LIBS_FOUNDATION.equals(path)) {
+                return foundation;
+            }
+            // caller-local normalize before climb: .../xfpage/../shared.js
+            if ("/libs/cq/experience-fragments/components/shared.js".equals(path)
+                    || "/apps/cq/experience-fragments/components/shared.js".equals(path)) {
+                return null;
+            }
+            // climb normalize: .../page/../shared.js
+            if (sharedJsPath.equals(path)) {
+                return sharedJs;
+            }
+            return null;
+        });
+        when(request.getResource()).thenReturn(contentResource);
+
+        bindings.put(ScriptEngine.FILENAME, CALLER_HTL);
+
+        ScriptNameAwareReader reader = dependencyResolver.resolve(bindings, relativeDependency);
+        assertNotNull(reader);
+        assertEquals(sharedJsPath, reader.getScriptName());
+    }
+
+    /**
+     * Fallback climb stops cleanly when a resourceSuperType cannot be resolved.
+     */
+    @Test
+    void resolveInheritedDependency_unresolvableSuperTypeFallsThrough() {
+        Resource libsXf = mockResource(LIBS_XF, "missing/super/type");
+        Resource appsXf = mockResource(APPS_XF, null);
+        Resource callerHtl = mockResource(CALLER_HTL, "nt:file");
+        Resource contentResource = mockContent("/content/xf/master/jcr:content", XF_TYPE);
+
+        when(callerHtl.getParent()).thenReturn(libsXf);
+        when(libsXf.getChild("head.js")).thenReturn(null);
+        when(appsXf.getChild("head.js")).thenReturn(null);
+
+        when(scriptingResourceResolver.getResource(any())).thenAnswer(invocation -> {
+            String path = invocation.getArgument(0);
+            if (CALLER_HTL.equals(path)) {
+                return callerHtl;
+            }
+            if (XF_TYPE.equals(path) || APPS_XF.equals(path)) {
+                return appsXf;
+            }
+            if (LIBS_XF.equals(path)) {
+                return libsXf;
+            }
+            // super type path does not resolve
+            return null;
+        });
+        when(request.getResource()).thenReturn(contentResource);
+
+        bindings.put(ScriptEngine.FILENAME, CALLER_HTL);
+
+        assertThrows(
+                org.apache.sling.scripting.sightly.SightlyException.class,
+                () -> dependencyResolver.resolve(bindings, "head.js"));
+    }
+
     private static Resource mockResource(String path, String resourceSuperType) {
         Resource resource = mock(Resource.class);
         when(resource.getPath()).thenReturn(path);
