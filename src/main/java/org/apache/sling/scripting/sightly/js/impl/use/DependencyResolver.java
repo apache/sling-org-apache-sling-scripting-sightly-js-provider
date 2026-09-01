@@ -97,6 +97,30 @@ public class DependencyResolver {
                     } else {
                         scriptResource = callerType.getChild(dependency);
                     }
+                    // Fallback: climb from the caller. Search-path overlays under /apps often omit
+                    // sling:resourceSuperType (it lives on /libs), so the driver-anchored walk above
+                    // can miss inherited scripts that resolve from the executing /libs caller.
+                    if (scriptResource == null) {
+                        Resource hierarchyResource = callerType;
+                        while (hierarchyResource != null && scriptResource == null) {
+                            String nextType = hierarchyResource.getResourceSuperType();
+                            if (nextType == null) {
+                                break;
+                            }
+                            hierarchyResource = scriptingResourceResolver.getResource(nextType);
+                            if (hierarchyResource != null) {
+                                if (dependency.startsWith("..")) {
+                                    String absolutePath =
+                                            ResourceUtil.normalize(hierarchyResource.getPath() + "/" + dependency);
+                                    if (StringUtils.isNotEmpty(absolutePath)) {
+                                        scriptResource = scriptingResourceResolver.getResource(absolutePath);
+                                    }
+                                } else {
+                                    scriptResource = hierarchyResource.getChild(dependency);
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
